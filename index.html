@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Piece — Episode Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@1&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #faf9f6; --surface: #f2f0eb; --border: #e0ddd5;
+    --text: #1a1917; --text-muted: #6b6860; --text-hint: #a09d96;
+    --canon-bg: #ffffff; --filler-bg: #fff0f0; --filler-border: #f5c4c4; --filler-text: #8b2020;
+    --mixed-bg: #fffbf0; --mixed-border: #f0d890; --mixed-text: #7a5c10;
+    --accent: #1D9E75; --star-off: #ddd; --star-on: #e8a020;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .top-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 12px; }
+  .logo-title { font-size: 24px; font-weight: 500; letter-spacing: -0.5px; }
+  .logo-sub { font-family: 'Libre Baskerville', serif; font-style: italic; font-size: 14px; color: var(--text-muted); margin-left: 10px; }
+  .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .next-ep-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .next-ep-label { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+  .next-ep-info  { font-size: 14px; font-weight: 500; flex: 1; min-width: 120px; }
+  .next-ep-type  { font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+  .next-ep-type.canon  { background: #e1f5ee; color: #0f6e56; }
+  .next-ep-type.filler { background: var(--filler-bg); color: var(--filler-text); }
+  .next-ep-type.mixed  { background: var(--mixed-bg);  color: var(--mixed-text); }
+  .next-btns { display: flex; gap: 8px; }
+  .next-ep-goto  { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .next-ep-goto:hover { background: var(--surface); }
+  .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .next-ep-watch:hover { opacity: 0.85; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .stat { background: var(--surface); border-radius: 10px; padding: 12px 16px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+
+  .progress-wrap { background: var(--surface); border-radius: 99px; height: 6px; margin-bottom: 1.5rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filter-btn { font-size: 12px; padding: 5px 13px; border-radius: 99px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .filter-btn:hover:not(.active) { background: var(--surface); }
+  .spacer { flex: 1; min-width: 20px; }
+  .ep-search { font-size: 13px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--canon-bg); color: var(--text); font-family: inherit; width: 150px; }
+  .ep-search:focus { outline: none; border-color: var(--accent); }
+
+  .legend { display: flex; gap: 14px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .ldot { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; }
+
+  .saga { margin-bottom: 1.75rem; }
+  .saga-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .saga-icon { font-size: 15px; }
+  .saga-name { font-size: 14px; font-weight: 500; }
+  .saga-range { font-size: 12px; color: var(--text-hint); }
+  .saga-progress { font-size: 12px; color: var(--text-muted); }
+  .saga-btn { margin-left: auto; font-size: 11px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+  .saga-btn:hover { background: var(--surface); }
+
+  .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
+  .ep {
+    border-radius: 6px; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; cursor: pointer; border: 1px solid;
+    transition: transform 0.1s; user-select: none; position: relative; font-weight: 400;
+  }
+  .ep:hover { transform: scale(1.07); z-index: 2; }
+  .ep:active { transform: scale(0.97); }
+  .ep.canon  { background: var(--canon-bg);  color: var(--text);        border-color: var(--border); }
+  .ep.filler { background: var(--filler-bg); color: var(--filler-text); border-color: var(--filler-border); }
+  .ep.mixed  { background: var(--mixed-bg);  color: var(--mixed-text);  border-color: var(--mixed-border); }
+  .ep.watched { opacity: 0.28; }
+  .ep.watched::after { content:''; position:absolute; top:50%; left:15%; right:15%; height:1.5px; background:currentColor; border-radius:1px; transform:translateY(-50%) rotate(-10deg); }
+  .ep.has-rating::before { content:''; position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background: var(--star-on); }
+  .ep.next-highlight { outline: 2.5px solid var(--accent); outline-offset: 1px; }
+
+  /* Modale */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(26,25,23,0.5);
+    display: none; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: 16px; border: 1px solid var(--border);
+    width: 100%; max-width: 340px; padding: 1.5rem;
+    animation: mpop 0.18s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes mpop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+  .modal-ep-num   { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
+  .modal-ep-title { font-size: 22px; font-weight: 500; }
+  .modal-close    { font-size: 22px; color: var(--text-hint); cursor: pointer; background: none; border: none; line-height: 1; padding: 0 0 0 12px; flex-shrink: 0; }
+  .modal-close:hover { color: var(--text); }
+  .modal-badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 99px; margin-bottom: 1.25rem; }
+  .modal-badge.canon  { background: #e1f5ee; color: #0f6e56; }
+  .modal-badge.filler { background: var(--filler-bg); color: var(--filler-text); }
+  .modal-badge.mixed  { background: var(--mixed-bg);  color: var(--mixed-text); }
+  .modal-label { font-size: 11px; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .modal-stars { display: flex; gap: 4px; margin-bottom: 1.25rem; }
+  .modal-star  { font-size: 28px; cursor: pointer; color: var(--star-off); transition: color 0.1s; line-height: 1; }
+  .modal-star.on { color: var(--star-on); }
+  .modal-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .modal-btn { flex: 1; font-size: 13px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; font-family: inherit; text-align: center; text-decoration: none; display: block; transition: background 0.12s; }
+  .modal-btn:hover { background: var(--border); }
+  .modal-btn.copied { background: #e1f5ee; color: #0f6e56; border-color: #9FE1CB; }
+  .modal-btn-main { width: 100%; font-size: 14px; padding: 11px 14px; border-radius: 9px; border: none; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
+  .modal-btn-main.mark   { background: var(--accent); color: #fff; }
+  .modal-btn-main.mark:hover { opacity: 0.88; }
+  .modal-btn-main.unmark { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .modal-btn-main.unmark:hover { background: var(--filler-bg); color: var(--filler-text); border-color: var(--filler-border); }
+
+  /* Tooltip hover */
+  .tt {
+    position: fixed; pointer-events: none; z-index: 8888; display: none;
+    background: #1c1a18; color: #f5f3ef; border-radius: 10px;
+    padding: 9px 12px; font-size: 12px; line-height: 1.5; width: 180px;
+  }
+  .tt-num  { font-size: 10px; opacity: 0.45; margin-bottom: 1px; }
+  .tt-type { font-size: 11px; margin-bottom: 7px; }
+  .tt-stars-label { font-size: 10px; opacity: 0.45; margin-bottom: 3px; }
+  .tt-stars { display: flex; gap: 2px; margin-bottom: 4px; }
+  .tt-star  { font-size: 18px; color: var(--star-off); line-height: 1; }
+  .tt-star.on { color: var(--star-on); }
+  .tt-hint  { font-size: 10px; opacity: 0.3; margin-top: 4px; }
+
+  .btn { font-size: 12px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn:hover { background: var(--surface); }
+  .btn.danger:hover { background: var(--filler-bg); color: var(--filler-text); border-color: var(--filler-border); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.88; }
+
+  @media(max-width:500px){
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .top-bar { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-bar">
+    <div>
+      <span class="logo-title">One Piece</span>
+      <span class="logo-sub">episode tracker</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" id="btn-skip-filler">Salta tutti i filler</button>
+      <button class="btn danger"  id="btn-reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="next-ep-bar">
+    <span class="next-ep-label">Prossimo da vedere</span>
+    <span class="next-ep-info" id="next-info">—</span>
+    <div class="next-btns">
+      <button class="next-ep-goto" id="btn-next">Scorri ↓</button>
+      <a class="next-ep-watch" id="link-next" href="#" target="_blank">▶ Guarda</a>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Visti</div><div class="stat-value" id="st-watched">0</div></div>
+    <div class="stat"><div class="stat-label">Canonici visti</div><div class="stat-value" id="st-canon">0</div></div>
+    <div class="stat"><div class="stat-label">Filler saltati</div><div class="stat-value" id="st-filler">0</div></div>
+    <div class="stat"><div class="stat-label">Totale episodi</div><div class="stat-value" id="st-total">0</div></div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+  <div class="toolbar">
+    <button class="filter-btn active" data-f="all">Tutti</button>
+    <button class="filter-btn" data-f="canon">Canonici</button>
+    <button class="filter-btn" data-f="filler">Filler</button>
+    <button class="filter-btn" data-f="unwatched">Da vedere</button>
+    <button class="filter-btn" data-f="rated">Votati</button>
+    <div class="spacer"></div>
+    <input class="ep-search" type="number" placeholder="Vai all'ep. #" id="ep-search" min="1">
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="ldot" style="background:#fff;border-color:#c8c4ba"></div>Canonico</div>
+    <div class="legend-item"><div class="ldot" style="background:#fff0f0;border-color:#f5c4c4"></div>Filler — salta</div>
+    <div class="legend-item"><div class="ldot" style="background:#fffbf0;border-color:#f0d890"></div>Misto</div>
+    <div class="legend-item"><div class="ldot" style="background:#e8e6e0;border-color:#c8c4ba;opacity:.5"></div>Visto / saltato</div>
+    <div class="legend-item"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--star-on);margin-right:2px;vertical-align:middle"></span>Votato</div>
+  </div>
+
+  <div id="container"></div>
+</div>
+
+<!-- Tooltip hover -->
+<div class="tt" id="tt">
+  <div class="tt-num"  id="tt-num"></div>
+  <div class="tt-type" id="tt-type"></div>
+  <div class="tt-stars-label">Voto</div>
+  <div class="tt-stars" id="tt-stars"></div>
+  <div class="tt-hint">Click per dettagli</div>
+</div>
+
+<!-- Modale -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-ep-num" id="modal-num"></div>
+        <div class="modal-ep-title" id="modal-title"></div>
+      </div>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-badge" id="modal-badge"></div>
+    <div class="modal-label">Il tuo voto</div>
+    <div class="modal-stars" id="modal-stars"></div>
+    <div class="modal-row">
+      <a class="modal-btn" id="modal-watch" href="#" target="_blank">▶ Guarda</a>
+      <button class="modal-btn" id="modal-copy">Copia link</button>
+    </div>
+    <button class="modal-btn-main mark" id="modal-toggle">Segna come visto</button>
+  </div>
+</div>
+
+<script>
+const BASE = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
+function epUrl(n){ return BASE + String(n).padStart(3,'0'); }
+
+function copyUrl(n, btn){
+  navigator.clipboard.writeText(epUrl(n)).then(()=>{
+    const orig=btn.textContent; btn.textContent='✓ Copiato!'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+const FILLER=[[54,60],[98,99],[102,102],[131,143],[196,206],[220,225],[279,283],[291,292],[303,303],[317,319],[326,336],[382,384],[406,407],[426,429],[457,458],[492,492],[542,542],[575,578],[590,590],[626,627],[747,750],[780,782],[895,896],[907,907],[1029,1030]];
+const MIXED=[[45,47],[61,61],[68,69],[101,101],[213,216]];
+const SAGAS=[
+  {name:"Mare Orientale",icon:"🌊",s:1,e:61},
+  {name:"Arabasta",icon:"🏜️",s:62,e:135},
+  {name:"Skypiea",icon:"☁️",s:136,e:206},
+  {name:"Water Seven & Enies Lobby",icon:"🚂",s:207,e:325},
+  {name:"Thriller Bark",icon:"🦇",s:326,e:384},
+  {name:"Sabaody & Marineford",icon:"⚓",s:385,e:516},
+  {name:"Isola degli Uomini-Pesce",icon:"🐟",s:517,e:574},
+  {name:"Punk Hazard",icon:"🧪",s:575,e:629},
+  {name:"Dressrosa",icon:"🌹",s:630,e:699},
+  {name:"Zou & Whole Cake Island",icon:"🍰",s:700,e:877},
+  {name:"Wano",icon:"🗡️",s:878,e:1085},
+  {name:"Egghead",icon:"🤖",s:1086,e:1155},
+];
+const TOTAL=SAGAS[SAGAS.length-1].e;
+
+function epType(n){
+  for(const[s,e]of FILLER)if(n>=s&&n<=e)return'filler';
+  for(const[s,e]of MIXED)if(n>=s&&n<=e)return'mixed';
+  return'canon';
+}
+
+let watched=new Set(), ratings={}, filter='all';
+try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
+try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
+
+function save(){
+  try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
+  try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
+}
+
+/* ---- Modale ---- */
+let modalEp=null, modalSaga=null;
+const overlay=document.getElementById('modal-overlay');
+const modalClose=document.getElementById('modal-close');
+const modalToggle=document.getElementById('modal-toggle');
+const modalCopy=document.getElementById('modal-copy');
+const modalWatch=document.getElementById('modal-watch');
+
+function typeLabel(t){
+  if(t==='filler')return'🔴 Filler — puoi saltarlo';
+  if(t==='mixed')return'🟡 Episodio misto';
+  return'🟢 Canonico';
+}
+
+function renderModalStars(ep){
+  const el=document.getElementById('modal-stars'); el.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const s=document.createElement('span');
+    s.className='modal-star'+(ratings[ep]>=i?' on':'');
+    s.textContent='★'; s.dataset.v=i;
+    s.addEventListener('mouseenter',()=>{
+      el.querySelectorAll('.modal-star').forEach((x,idx)=>x.classList.toggle('on',idx<i));
+    });
+    s.addEventListener('mouseleave',()=>renderModalStars(ep));
+    s.addEventListener('click',()=>{
+      const v=parseInt(s.dataset.v);
+      if(ratings[ep]===v) delete ratings[ep]; else ratings[ep]=v;
+      save();
+      const cell=document.querySelector(`.ep[data-ep="${ep}"]`);
+      if(cell) cell.classList.toggle('has-rating',!!ratings[ep]);
+      renderModalStars(ep);
+    });
+    el.appendChild(s);
+  }
+}
+
+function openModal(n, saga){
+  modalEp=n; modalSaga=saga;
+  const t=epType(n);
+  document.getElementById('modal-num').textContent='Episodio '+n;
+  document.getElementById('modal-title').textContent='Ep. '+String(n).padStart(3,'0');
+  const badge=document.getElementById('modal-badge');
+  badge.textContent=typeLabel(t); badge.className='modal-badge '+t;
+  renderModalStars(n);
+  modalWatch.href=epUrl(n);
+  modalCopy.textContent='Copia link'; modalCopy.classList.remove('copied');
+  modalCopy.onclick=()=>copyUrl(n, modalCopy);
+  const isWatched=watched.has(n);
+  modalToggle.textContent=isWatched?'Segna come non visto':'✓ Guardato';
+  modalToggle.className='modal-btn-main '+(isWatched?'unmark':'mark');
+  overlay.classList.add('open');
+}
+
+function closeModal(){ overlay.classList.remove('open'); modalEp=null; }
+
+modalClose.addEventListener('click', closeModal);
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+modalToggle.addEventListener('click',()=>{
+  if(modalEp===null) return;
+  const n=modalEp, saga=modalSaga;
+  watched.has(n)?watched.delete(n):watched.add(n);
+  save();
+  const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+  if(cell){
+    cell.classList.toggle('watched');
+    if(filter==='unwatched'&&watched.has(n)) cell.style.display='none';
+  }
+  stats();
+  if(saga){
+    const seen=[...Array(saga.e-saga.s+1)].filter((_,i)=>watched.has(saga.s+i)).length;
+    const sp=document.getElementById('sp-'+saga.s); if(sp) sp.textContent=seen+'/'+(saga.e-saga.s+1);
+  }
+  closeModal();
+});
+
+/* ---- Tooltip hover ---- */
+const tt=document.getElementById('tt');
+let ttHide=null;
+
+function showTT(ev,n,type){
+  clearTimeout(ttHide);
+  document.getElementById('tt-num').textContent='Episodio '+n;
+  document.getElementById('tt-type').textContent=typeLabel(type);
+  const el=document.getElementById('tt-stars'); el.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const s=document.createElement('span');
+    s.className='tt-star'+(ratings[n]>=i?' on':'');
+    s.textContent='★'; el.appendChild(s);
+  }
+  posTT(ev); tt.style.display='block';
+}
+function hideTT(){ ttHide=setTimeout(()=>tt.style.display='none', 80); }
+function posTT(ev){
+  const x=ev.clientX,y=ev.clientY,w=190,h=110;
+  tt.style.left=(x+w+16>window.innerWidth?x-w-8:x+14)+'px';
+  tt.style.top=(y+h+16>window.innerHeight?y-h-8:y+14)+'px';
+}
+document.addEventListener('mousemove',ev=>{ if(tt.style.display==='block') posTT(ev); });
+
+/* ---- Next ep ---- */
+function updateNext(){
+  document.querySelector('.ep.next-highlight')?.classList.remove('next-highlight');
+  let next=null;
+  for(let n=1;n<=TOTAL;n++){if(!watched.has(n)){next=n;break;}}
+  const infoEl=document.getElementById('next-info');
+  const linkEl=document.getElementById('link-next');
+  const gotoEl=document.getElementById('btn-next');
+  if(!next){
+    infoEl.innerHTML='<span style="color:var(--accent)">Hai visto tutto! 🎉</span>';
+    linkEl.style.display='none'; gotoEl.style.display='none'; return;
+  }
+  linkEl.style.display=''; gotoEl.style.display='';
+  linkEl.href=epUrl(next);
+  gotoEl.dataset.ep=next;
+  const t=epType(next);
+  const label=t==='filler'?'Filler':t==='mixed'?'Misto':'Canonico';
+  infoEl.innerHTML=`Episodio <strong>${next}</strong> <span class="next-ep-type ${t}">${label}</span>`;
+  const cell=document.querySelector(`.ep[data-ep="${next}"]`);
+  if(cell) cell.classList.add('next-highlight');
+}
+
+document.getElementById('btn-next').addEventListener('click',()=>{
+  const n=parseInt(document.getElementById('btn-next').dataset.ep); if(!n)return;
+  filter='all';
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
+  document.querySelectorAll('.ep').forEach(c=>c.style.display='');
+  const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+  if(cell){cell.scrollIntoView({behavior:'smooth',block:'center'});cell.style.outline='2.5px solid var(--accent)';setTimeout(()=>{cell.style.outline='';cell.classList.add('next-highlight');},1200);}
+});
+
+/* ---- Stats ---- */
+function stats(){
+  let fw=0,cw=0;
+  for(const ep of watched){epType(ep)==='filler'?fw++:cw++;}
+  document.getElementById('st-watched').textContent=watched.size;
+  document.getElementById('st-canon').textContent=cw;
+  document.getElementById('st-filler').textContent=fw;
+  document.getElementById('st-total').textContent=TOTAL;
+  document.getElementById('progress').style.width=Math.round(watched.size/TOTAL*100)+'%';
+  updateNext();
+}
+
+function visible(n,type){
+  if(filter==='canon')return type==='canon';
+  if(filter==='filler')return type==='filler'||type==='mixed';
+  if(filter==='unwatched')return !watched.has(n);
+  if(filter==='rated')return !!ratings[n];
+  return true;
+}
+
+/* ---- Render ---- */
+function render(){
+  const c=document.getElementById('container'); c.innerHTML='';
+  for(const saga of SAGAS){
+    const total=saga.e-saga.s+1;
+    const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
+    const div=document.createElement('div'); div.className='saga';
+    const head=document.createElement('div'); head.className='saga-head';
+    head.innerHTML=`<span class="saga-icon">${saga.icon}</span><span class="saga-name">${saga.name}</span><span class="saga-range">Ep. ${saga.s}–${saga.e}</span><span class="saga-progress" id="sp-${saga.s}">${seen}/${total}</span><button class="saga-btn" data-s="${saga.s}" data-e="${saga.e}">Segna tutti</button>`;
+    const grid=document.createElement('div'); grid.className='ep-grid';
+    for(let n=saga.s;n<=saga.e;n++){
+      const t=epType(n);
+      const cell=document.createElement('div');
+      cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}`;
+      cell.textContent=n; cell.dataset.ep=n; cell.dataset.t=t;
+      if(!visible(n,t)) cell.style.display='none';
+      cell.addEventListener('click',()=>openModal(n, saga));
+      cell.addEventListener('mouseenter',ev=>showTT(ev,n,t));
+      cell.addEventListener('mouseleave',hideTT);
+      grid.appendChild(cell);
+    }
+    div.appendChild(head); div.appendChild(grid); c.appendChild(div);
+    head.querySelector('.saga-btn').addEventListener('click',ev=>{
+      ev.stopPropagation();
+      const s=parseInt(ev.target.dataset.s),en=parseInt(ev.target.dataset.e);
+      const all=[...Array(en-s+1)].every((_,i)=>watched.has(s+i));
+      for(let i=s;i<=en;i++){all?watched.delete(i):watched.add(i);}
+      save(); render(); stats();
+    });
+  }
+  updateNext();
+}
+
+/* ---- Filtri & Search ---- */
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); filter=btn.dataset.f;
+    document.querySelectorAll('.ep').forEach(cell=>{
+      cell.style.display=visible(parseInt(cell.dataset.ep),cell.dataset.t)?'':'none';
+    });
+  });
+});
+
+document.getElementById('ep-search').addEventListener('keydown',ev=>{
+  if(ev.key!=='Enter')return;
+  const n=parseInt(ev.target.value); if(!n)return;
+  filter='all';
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
+  document.querySelectorAll('.ep').forEach(c=>c.style.display='');
+  const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+  if(cell){cell.scrollIntoView({behavior:'smooth',block:'center'});cell.style.outline='2px solid var(--accent)';setTimeout(()=>cell.style.outline='',1500);}
+  ev.target.value='';
+});
+
+document.getElementById('btn-skip-filler').addEventListener('click',()=>{
+  for(const[s,e]of FILLER) for(let i=s;i<=e;i++) watched.add(i);
+  save(); render(); stats();
+});
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; save(); render(); stats(); }
+});
+
+render(); stats();
+</script>
+</body>
+</html>
