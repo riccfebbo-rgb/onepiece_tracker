@@ -17,6 +17,18 @@
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
   .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
+  /* Auth bar */
+  .auth-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 10px; padding: 10px 16px; margin-bottom: 1.5rem; }
+  .auth-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: none; }
+  .auth-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .auth-hint { font-size: 13px; color: var(--text-muted); flex: 1; }
+  .auth-sync { font-size: 11px; color: var(--text-hint); }
+  .btn-google { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; font-family: inherit; }
+  .btn-google:hover { background: var(--surface); }
+  .btn-google svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .btn-logout { font-size: 12px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+  .btn-logout:hover { background: var(--surface); }
+
   .top-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 12px; }
   .logo-title { font-size: 24px; font-weight: 500; letter-spacing: -0.5px; }
   .logo-sub { font-family: 'Libre Baskerville', serif; font-style: italic; font-size: 14px; color: var(--text-muted); margin-left: 10px; }
@@ -32,7 +44,7 @@
   .next-btns { display: flex; gap: 8px; }
   .next-ep-goto  { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; white-space: nowrap; }
   .next-ep-goto:hover { background: var(--surface); }
-  .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; }
   .next-ep-watch:hover { opacity: 0.85; }
 
   .stats-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
@@ -65,12 +77,7 @@
   .saga-btn:hover { background: var(--surface); }
 
   .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
-  .ep {
-    border-radius: 6px; aspect-ratio: 1;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; cursor: pointer; border: 1px solid;
-    transition: transform 0.1s; user-select: none; position: relative; font-weight: 400;
-  }
+  .ep { border-radius: 6px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; border: 1px solid; transition: transform 0.1s; user-select: none; position: relative; font-weight: 400; }
   .ep:hover { transform: scale(1.07); z-index: 2; }
   .ep:active { transform: scale(0.97); }
   .ep.canon  { background: var(--canon-bg);  color: var(--text);        border-color: var(--border); }
@@ -81,70 +88,71 @@
   .ep.has-rating::before { content:''; position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background: var(--star-on); }
   .ep.next-highlight { outline: 2.5px solid var(--accent); outline-offset: 1px; }
 
-  /* Modale */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(26,25,23,0.5);
-    display: none; align-items: center; justify-content: center; padding: 1rem;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--bg); border-radius: 16px; border: 1px solid var(--border);
-    width: 100%; max-width: 340px; padding: 1.5rem;
-    animation: mpop 0.18s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes mpop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
-  .modal-ep-num   { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
-  .modal-ep-title { font-size: 22px; font-weight: 500; }
-  .modal-close    { font-size: 22px; color: var(--text-hint); cursor: pointer; background: none; border: none; line-height: 1; padding: 0 0 0 12px; flex-shrink: 0; }
-  .modal-close:hover { color: var(--text); }
-  .modal-badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 99px; margin-bottom: 1.25rem; }
-  .modal-badge.canon  { background: #e1f5ee; color: #0f6e56; }
-  .modal-badge.filler { background: var(--filler-bg); color: var(--filler-text); }
-  .modal-badge.mixed  { background: var(--mixed-bg);  color: var(--mixed-text); }
-  .modal-label { font-size: 11px; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .modal-stars { display: flex; gap: 4px; margin-bottom: 1.25rem; }
-  .modal-star  { font-size: 28px; cursor: pointer; color: var(--star-off); transition: color 0.1s; line-height: 1; }
-  .modal-star.on { color: var(--star-on); }
-  .modal-row { display: flex; gap: 8px; margin-bottom: 8px; }
-  .modal-btn { flex: 1; font-size: 13px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; font-family: inherit; text-align: center; text-decoration: none; display: block; transition: background 0.12s; }
-  .modal-btn:hover { background: var(--border); }
-  .modal-btn.copied { background: #e1f5ee; color: #0f6e56; border-color: #9FE1CB; }
-  .modal-btn-main { width: 100%; font-size: 14px; padding: 11px 14px; border-radius: 9px; border: none; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
-  .modal-btn-main.mark   { background: var(--accent); color: #fff; }
-  .modal-btn-main.mark:hover { opacity: 0.88; }
-  .modal-btn-main.unmark { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
-  .modal-btn-main.unmark:hover { background: var(--filler-bg); color: var(--filler-text); border-color: var(--filler-border); }
-
   /* Tooltip hover */
-  .tt {
-    position: fixed; pointer-events: none; z-index: 8888; display: none;
-    background: #1c1a18; color: #f5f3ef; border-radius: 10px;
-    padding: 9px 12px; font-size: 12px; line-height: 1.5; width: 180px;
-  }
-  .tt-num  { font-size: 10px; opacity: 0.45; margin-bottom: 1px; }
-  .tt-type { font-size: 11px; margin-bottom: 7px; }
-  .tt-stars-label { font-size: 10px; opacity: 0.45; margin-bottom: 3px; }
-  .tt-stars { display: flex; gap: 2px; margin-bottom: 4px; }
-  .tt-star  { font-size: 18px; color: var(--star-off); line-height: 1; }
-  .tt-star.on { color: var(--star-on); }
-  .tt-hint  { font-size: 10px; opacity: 0.3; margin-top: 4px; }
+  .tt { position:fixed; pointer-events:none; z-index:8888; display:none; background:#1c1a18; color:#f5f3ef; border-radius:10px; padding:9px 12px; font-size:12px; line-height:1.5; width:180px; }
+  .tt-num  { font-size:10px; opacity:0.45; margin-bottom:1px; }
+  .tt-type { font-size:11px; margin-bottom:7px; }
+  .tt-stars-label { font-size:10px; opacity:0.45; margin-bottom:3px; }
+  .tt-stars { display:flex; gap:2px; margin-bottom:4px; }
+  .tt-star  { font-size:18px; color:var(--star-off); line-height:1; }
+  .tt-star.on { color:var(--star-on); }
+  .tt-hint  { font-size:10px; opacity:0.3; margin-top:4px; }
 
-  .btn { font-size: 12px; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.15s; }
-  .btn:hover { background: var(--surface); }
-  .btn.danger:hover { background: var(--filler-bg); color: var(--filler-text); border-color: var(--filler-border); }
-  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn.primary:hover { opacity: 0.88; }
+  /* Modale */
+  .modal-overlay { position:fixed; inset:0; z-index:9999; background:rgba(26,25,23,0.5); display:none; align-items:center; justify-content:center; padding:1rem; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg); border-radius:16px; border:1px solid var(--border); width:100%; max-width:340px; padding:1.5rem; animation:mpop 0.18s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes mpop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
+  .modal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
+  .modal-ep-num   { font-size:11px; color:var(--text-hint); margin-bottom:4px; }
+  .modal-ep-title { font-size:22px; font-weight:500; }
+  .modal-close    { font-size:22px; color:var(--text-hint); cursor:pointer; background:none; border:none; line-height:1; padding:0 0 0 12px; flex-shrink:0; }
+  .modal-close:hover { color:var(--text); }
+  .modal-badge { display:inline-block; font-size:12px; padding:3px 10px; border-radius:99px; margin-bottom:1.25rem; }
+  .modal-badge.canon  { background:#e1f5ee; color:#0f6e56; }
+  .modal-badge.filler { background:var(--filler-bg); color:var(--filler-text); }
+  .modal-badge.mixed  { background:var(--mixed-bg);  color:var(--mixed-text); }
+  .modal-label { font-size:11px; color:var(--text-hint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+  .modal-stars { display:flex; gap:4px; margin-bottom:1.25rem; }
+  .modal-star  { font-size:28px; cursor:pointer; color:var(--star-off); transition:color 0.1s; line-height:1; }
+  .modal-star.on { color:var(--star-on); }
+  .modal-row { display:flex; gap:8px; margin-bottom:8px; }
+  .modal-btn { flex:1; font-size:13px; padding:9px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text-muted); cursor:pointer; font-family:inherit; text-align:center; text-decoration:none; display:block; transition:background 0.12s; }
+  .modal-btn:hover { background:var(--border); }
+  .modal-btn.copied { background:#e1f5ee; color:#0f6e56; border-color:#9FE1CB; }
+  .modal-btn-main { width:100%; font-size:14px; padding:11px 14px; border-radius:9px; border:none; cursor:pointer; font-family:inherit; font-weight:500; transition:all 0.15s; }
+  .modal-btn-main.mark   { background:var(--accent); color:#fff; }
+  .modal-btn-main.mark:hover { opacity:0.88; }
+  .modal-btn-main.unmark { background:var(--surface); color:var(--text-muted); border:1px solid var(--border); }
+  .modal-btn-main.unmark:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
+
+  .btn { font-size:12px; padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .btn:hover { background:var(--surface); }
+  .btn.danger:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.primary:hover { opacity:0.88; }
 
   @media(max-width:500px){
-    .stats-row { grid-template-columns: repeat(2,1fr); }
-    .top-bar { flex-direction: column; align-items: flex-start; }
+    .stats-row { grid-template-columns:repeat(2,1fr); }
+    .top-bar { flex-direction:column; align-items:flex-start; }
   }
 </style>
 </head>
 <body>
 <div class="page">
+
+  <!-- Auth bar -->
+  <div class="auth-bar" id="auth-bar">
+    <img class="auth-avatar" id="auth-avatar" src="" alt="">
+    <span class="auth-name" id="auth-name" style="display:none"></span>
+    <span class="auth-hint" id="auth-hint">Accedi per sincronizzare i progressi su tutti i dispositivi</span>
+    <span class="auth-sync" id="auth-sync" style="display:none"></span>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Accedi con Google
+    </button>
+    <button class="btn-logout" id="btn-logout" style="display:none">Esci</button>
+  </div>
 
   <div class="top-bar">
     <div>
@@ -198,19 +206,19 @@
 
 <!-- Tooltip hover -->
 <div class="tt" id="tt">
-  <div class="tt-num"  id="tt-num"></div>
-  <div class="tt-type" id="tt-type"></div>
+  <div class="tt-num"         id="tt-num"></div>
+  <div class="tt-type"        id="tt-type"></div>
   <div class="tt-stars-label">Voto</div>
-  <div class="tt-stars" id="tt-stars"></div>
+  <div class="tt-stars"       id="tt-stars"></div>
   <div class="tt-hint">Click per dettagli</div>
 </div>
 
 <!-- Modale -->
 <div class="modal-overlay" id="modal-overlay">
-  <div class="modal" id="modal">
+  <div class="modal">
     <div class="modal-header">
       <div>
-        <div class="modal-ep-num" id="modal-num"></div>
+        <div class="modal-ep-num"   id="modal-num"></div>
         <div class="modal-ep-title" id="modal-title"></div>
       </div>
       <button class="modal-close" id="modal-close">×</button>
@@ -222,18 +230,36 @@
       <a class="modal-btn" id="modal-watch" href="#" target="_blank">▶ Guarda</a>
       <button class="modal-btn" id="modal-copy">Copia link</button>
     </div>
-    <button class="modal-btn-main mark" id="modal-toggle">Segna come visto</button>
+    <button class="modal-btn-main mark" id="modal-toggle">✓ Guardato</button>
   </div>
 </div>
 
-<script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDWI9cu4UjAZ20wm15-p19rNyNa8y4S_H4",
+  authDomain: "onepiece-tracker-19c0d.firebaseapp.com",
+  projectId: "onepiece-tracker-19c0d",
+  storageBucket: "onepiece-tracker-19c0d.firebasestorage.app",
+  messagingSenderId: "784516869807",
+  appId: "1:784516869807:web:e58b148f33f7e7152a2e5a"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
 const BASE = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
 function epUrl(n){ return BASE + String(n).padStart(3,'0'); }
 
 function copyUrl(n, btn){
   navigator.clipboard.writeText(epUrl(n)).then(()=>{
     const orig=btn.textContent; btn.textContent='✓ Copiato!'; btn.classList.add('copied');
-    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); }, 1500);
+    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); },1500);
   });
 }
 
@@ -261,28 +287,113 @@ function epType(n){
   return'canon';
 }
 
-let watched=new Set(), ratings={}, filter='all';
-try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
-try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
+let watched=new Set(), ratings={}, filter='all', currentUser=null, unsubSnap=null;
 
-function save(){
+/* ---- Persistenza: localStorage fallback + Firestore ---- */
+function loadLocal(){
+  try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
+  try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
+}
+
+function saveLocal(){
   try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
   try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
 }
 
-/* ---- Modale ---- */
-let modalEp=null, modalSaga=null;
-const overlay=document.getElementById('modal-overlay');
-const modalClose=document.getElementById('modal-close');
-const modalToggle=document.getElementById('modal-toggle');
-const modalCopy=document.getElementById('modal-copy');
-const modalWatch=document.getElementById('modal-watch');
+async function saveCloud(){
+  if(!currentUser) return;
+  const ref=doc(db,'users',currentUser.uid);
+  await setDoc(ref,{ watched:[...watched], ratings }, {merge:true});
+  document.getElementById('auth-sync').textContent='Salvato ✓';
+  setTimeout(()=>document.getElementById('auth-sync').textContent='',2000);
+}
+
+function save(){ saveLocal(); saveCloud(); }
+
+function applyData(data){
+  watched = new Set(data.watched||[]);
+  ratings = data.ratings||{};
+  render(); stats();
+}
+
+function subscribeCloud(uid){
+  if(unsubSnap) unsubSnap();
+  const ref=doc(db,'users',uid);
+  unsubSnap=onSnapshot(ref, snap=>{
+    if(snap.exists()) applyData(snap.data());
+  });
+}
+
+/* ---- Auth ---- */
+const provider=new GoogleAuthProvider();
+
+document.getElementById('btn-login').addEventListener('click',()=>{
+  signInWithPopup(auth, provider).catch(console.error);
+});
+document.getElementById('btn-logout').addEventListener('click',()=>{
+  signOut(auth);
+});
+
+onAuthStateChanged(auth, user=>{
+  currentUser=user;
+  const loginBtn  = document.getElementById('btn-login');
+  const logoutBtn = document.getElementById('btn-logout');
+  const avatar    = document.getElementById('auth-avatar');
+  const name      = document.getElementById('auth-name');
+  const hint      = document.getElementById('auth-hint');
+  const syncEl    = document.getElementById('auth-sync');
+  if(user){
+    loginBtn.style.display='none'; logoutBtn.style.display='';
+    avatar.src=user.photoURL||''; avatar.style.display='block';
+    name.textContent=user.displayName||user.email; name.style.display='';
+    hint.style.display='none'; syncEl.style.display='';
+    subscribeCloud(user.uid);
+  } else {
+    if(unsubSnap){ unsubSnap(); unsubSnap=null; }
+    loginBtn.style.display=''; logoutBtn.style.display='none';
+    avatar.style.display='none'; name.style.display='none';
+    hint.style.display=''; syncEl.style.display='none';
+    loadLocal(); render(); stats();
+  }
+});
+
+/* ---- Tooltip hover ---- */
+const tt=document.getElementById('tt');
+let ttHide=null;
 
 function typeLabel(t){
   if(t==='filler')return'🔴 Filler — puoi saltarlo';
   if(t==='mixed')return'🟡 Episodio misto';
   return'🟢 Canonico';
 }
+
+function showTT(ev,n,type){
+  clearTimeout(ttHide);
+  document.getElementById('tt-num').textContent='Episodio '+n;
+  document.getElementById('tt-type').textContent=typeLabel(type);
+  const el=document.getElementById('tt-stars'); el.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const s=document.createElement('span');
+    s.className='tt-star'+(ratings[n]>=i?' on':'');
+    s.textContent='★'; el.appendChild(s);
+  }
+  posTT(ev); tt.style.display='block';
+}
+function hideTT(){ ttHide=setTimeout(()=>tt.style.display='none',80); }
+function posTT(ev){
+  const x=ev.clientX,y=ev.clientY,w=190,h=110;
+  tt.style.left=(x+w+16>window.innerWidth?x-w-8:x+14)+'px';
+  tt.style.top=(y+h+16>window.innerHeight?y-h-8:y+14)+'px';
+}
+document.addEventListener('mousemove',ev=>{ if(tt.style.display==='block') posTT(ev); });
+
+/* ---- Modale ---- */
+let modalEp=null, modalSaga=null;
+const overlay   =document.getElementById('modal-overlay');
+const modalClose=document.getElementById('modal-close');
+const modalToggle=document.getElementById('modal-toggle');
+const modalCopy =document.getElementById('modal-copy');
+const modalWatch=document.getElementById('modal-watch');
 
 function renderModalStars(ep){
   const el=document.getElementById('modal-stars'); el.innerHTML='';
@@ -306,7 +417,7 @@ function renderModalStars(ep){
   }
 }
 
-function openModal(n, saga){
+function openModal(n,saga){
   modalEp=n; modalSaga=saga;
   const t=epType(n);
   document.getElementById('modal-num').textContent='Episodio '+n;
@@ -316,7 +427,7 @@ function openModal(n, saga){
   renderModalStars(n);
   modalWatch.href=epUrl(n);
   modalCopy.textContent='Copia link'; modalCopy.classList.remove('copied');
-  modalCopy.onclick=()=>copyUrl(n, modalCopy);
+  modalCopy.onclick=()=>copyUrl(n,modalCopy);
   const isWatched=watched.has(n);
   modalToggle.textContent=isWatched?'Segna come non visto':'✓ Guardato';
   modalToggle.className='modal-btn-main '+(isWatched?'unmark':'mark');
@@ -324,10 +435,9 @@ function openModal(n, saga){
 }
 
 function closeModal(){ overlay.classList.remove('open'); modalEp=null; }
-
-modalClose.addEventListener('click', closeModal);
-overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+modalClose.addEventListener('click',closeModal);
+overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
 modalToggle.addEventListener('click',()=>{
   if(modalEp===null) return;
@@ -347,30 +457,6 @@ modalToggle.addEventListener('click',()=>{
   closeModal();
 });
 
-/* ---- Tooltip hover ---- */
-const tt=document.getElementById('tt');
-let ttHide=null;
-
-function showTT(ev,n,type){
-  clearTimeout(ttHide);
-  document.getElementById('tt-num').textContent='Episodio '+n;
-  document.getElementById('tt-type').textContent=typeLabel(type);
-  const el=document.getElementById('tt-stars'); el.innerHTML='';
-  for(let i=1;i<=5;i++){
-    const s=document.createElement('span');
-    s.className='tt-star'+(ratings[n]>=i?' on':'');
-    s.textContent='★'; el.appendChild(s);
-  }
-  posTT(ev); tt.style.display='block';
-}
-function hideTT(){ ttHide=setTimeout(()=>tt.style.display='none', 80); }
-function posTT(ev){
-  const x=ev.clientX,y=ev.clientY,w=190,h=110;
-  tt.style.left=(x+w+16>window.innerWidth?x-w-8:x+14)+'px';
-  tt.style.top=(y+h+16>window.innerHeight?y-h-8:y+14)+'px';
-}
-document.addEventListener('mousemove',ev=>{ if(tt.style.display==='block') posTT(ev); });
-
 /* ---- Next ep ---- */
 function updateNext(){
   document.querySelector('.ep.next-highlight')?.classList.remove('next-highlight');
@@ -384,8 +470,7 @@ function updateNext(){
     linkEl.style.display='none'; gotoEl.style.display='none'; return;
   }
   linkEl.style.display=''; gotoEl.style.display='';
-  linkEl.href=epUrl(next);
-  gotoEl.dataset.ep=next;
+  linkEl.href=epUrl(next); gotoEl.dataset.ep=next;
   const t=epType(next);
   const label=t==='filler'?'Filler':t==='mixed'?'Misto':'Canonico';
   infoEl.innerHTML=`Episodio <strong>${next}</strong> <span class="next-ep-type ${t}">${label}</span>`;
@@ -439,7 +524,7 @@ function render(){
       cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}`;
       cell.textContent=n; cell.dataset.ep=n; cell.dataset.t=t;
       if(!visible(n,t)) cell.style.display='none';
-      cell.addEventListener('click',()=>openModal(n, saga));
+      cell.addEventListener('click',()=>openModal(n,saga));
       cell.addEventListener('mouseenter',ev=>showTT(ev,n,t));
       cell.addEventListener('mouseleave',hideTT);
       grid.appendChild(cell);
@@ -487,7 +572,8 @@ document.getElementById('btn-reset').addEventListener('click',()=>{
   if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; save(); render(); stats(); }
 });
 
-render(); stats();
+/* ---- Init ---- */
+loadLocal(); render(); stats();
 </script>
 </body>
 </html>
