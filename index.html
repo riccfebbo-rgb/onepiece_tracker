@@ -449,22 +449,78 @@ modalClose.addEventListener('click',closeModal);
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
-modalToggle.addEventListener('click',()=>{
-  if(modalEp===null) return;
-  const n=modalEp, saga=modalSaga;
-  watched.has(n)?watched.delete(n):watched.add(n);
+function markEp(n, saga){
+  watched.add(n);
   save();
   const cell=document.querySelector(`.ep[data-ep="${n}"]`);
-  if(cell){
-    cell.classList.toggle('watched');
-    if(filter==='unwatched'&&watched.has(n)) cell.style.display='none';
-  }
+  if(cell){ cell.classList.add('watched'); if(filter==='unwatched') cell.style.display='none'; }
   stats();
   if(saga){
     const seen=[...Array(saga.e-saga.s+1)].filter((_,i)=>watched.has(saga.s+i)).length;
     const sp=document.getElementById('sp-'+saga.s); if(sp) sp.textContent=seen+'/'+(saga.e-saga.s+1);
   }
-  closeModal();
+}
+
+function markPrevious(n, saga){
+  for(let i=1;i<n;i++) watched.add(i);
+  save(); render(); stats();
+}
+
+/* Popup "segna precedenti" dentro il modale */
+const prevBanner=document.createElement('div');
+prevBanner.id='prev-banner';
+prevBanner.style.cssText='display:none;margin-top:10px;padding:10px 12px;background:var(--surface);border-radius:9px;border:1px solid var(--border);font-size:13px;';
+prevBanner.innerHTML=`
+  <div style="color:var(--text-muted);margin-bottom:8px;">Ci sono episodi precedenti non segnati. Vuoi marcarli tutti come visti?</div>
+  <div style="display:flex;gap:8px;">
+    <button id="prev-yes" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;">Sì, segna tutti</button>
+    <button id="prev-no"  style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:13px;">No, solo questo</button>
+  </div>`;
+document.querySelector('.modal').appendChild(prevBanner);
+
+modalToggle.addEventListener('click',()=>{
+  if(modalEp===null) return;
+  const n=modalEp, saga=modalSaga;
+  const wasWatched=watched.has(n);
+
+  // Se stava deselezionando
+  if(wasWatched){
+    watched.delete(n); save();
+    const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+    if(cell) cell.classList.remove('watched');
+    stats();
+    if(saga){
+      const seen=[...Array(saga.e-saga.s+1)].filter((_,i)=>watched.has(saga.s+i)).length;
+      const sp=document.getElementById('sp-'+saga.s); if(sp) sp.textContent=seen+'/'+(saga.e-saga.s+1);
+    }
+    closeModal(); return;
+  }
+
+  // Controlla se ci sono episodi precedenti non visti
+  let prevUnseen=0;
+  for(let i=1;i<n;i++){ if(!watched.has(i)) prevUnseen++; }
+
+  if(prevUnseen>0){
+    // Mostra banner dentro il modale
+    modalToggle.style.display='none';
+    prevBanner.style.display='block';
+    prevBanner.querySelector('#prev-yes').onclick=()=>{
+      markPrevious(n, saga);
+      markEp(n, saga);
+      prevBanner.style.display='none';
+      modalToggle.style.display='';
+      closeModal();
+    };
+    prevBanner.querySelector('#prev-no').onclick=()=>{
+      markEp(n, saga);
+      prevBanner.style.display='none';
+      modalToggle.style.display='';
+      closeModal();
+    };
+  } else {
+    markEp(n, saga);
+    closeModal();
+  }
 });
 
 /* ---- Next ep ---- */
