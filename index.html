@@ -59,7 +59,6 @@
   .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; transition: opacity 0.2s;}
   .next-ep-watch:hover { opacity: 0.85; }
 
-  /* Modificata per supportare 5 colonne (aggiunto il tempo) */
   .stats-row { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
   .stat { background: var(--surface); border-radius: 10px; padding: 12px 16px; transition: background 0.3s; }
   .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 4px; }
@@ -100,6 +99,21 @@
   .ep.watched::after { content:''; position:absolute; top:50%; left:15%; right:15%; height:1.5px; background:currentColor; border-radius:1px; transform:translateY(-50%) rotate(-10deg); }
   .ep.has-rating::before { content:''; position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background: var(--star-on); }
   .ep.next-highlight { outline: 2.5px solid var(--accent); outline-offset: 1px; }
+
+  /* Nuovi stili per i Film */
+  .ep-movie { 
+    grid-column: span 2; background: #6b21a8; color: #ffffff; border: 1px solid #581c87; 
+    border-radius: 6px; display: flex; align-items: center; justify-content: center; 
+    font-size: 10px; font-weight: bold; text-align: center; cursor: pointer; 
+    transition: transform 0.1s; user-select: none; padding: 2px; position: relative;
+  }
+  .ep-movie:hover { transform: scale(1.05); z-index: 2; }
+  body.dark .ep-movie { background: #4c1d95; border-color: #2e1065; }
+  .ep-movie.watched { opacity: 0.4; }
+  .ep-movie.watched::after {
+    content:''; position:absolute; top:50%; left:5%; right:5%; height:1.5px; 
+    background:currentColor; border-radius:1px; transform:translateY(-50%) rotate(-3deg);
+  }
 
   .tt { position:fixed; pointer-events:none; z-index:8888; display:none; background:#1c1a18; color:#f5f3ef; border-radius:10px; padding:9px 12px; font-size:12px; line-height:1.5; width:180px; }
   .tt-num  { font-size:10px; opacity:0.45; margin-bottom:1px; }
@@ -146,7 +160,6 @@
   .btn.primary:hover { opacity:0.88; }
 
   @media(max-width:500px){
-    /* Su mobile le statistiche si dividono su più righe */
     .stats-row { grid-template-columns:repeat(2,1fr); }
     .top-bar { flex-direction:column; align-items:flex-start; }
   }
@@ -267,13 +280,12 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-// Logica per il Tema Scuro
+// Dark Mode Toggle
 const btnTheme = document.getElementById('btn-theme');
 if (localStorage.getItem('op_theme') === 'dark') {
   document.body.classList.add('dark');
   btnTheme.textContent = '☀️ Tema';
 }
-
 btnTheme.addEventListener('click', () => {
   document.body.classList.toggle('dark');
   const isDark = document.body.classList.contains('dark');
@@ -281,14 +293,21 @@ btnTheme.addEventListener('click', () => {
   btnTheme.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
 });
 
-// Titoli Episodi (Aggiungi qui i tuoi titoli)
+// Titoli Episodi 
 const EP_TITLES = {
   1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
   2: "Il cacciatore di pirati Roronoa Zoro",
   3: "Morgan mano d'ascia e l'infiltrazione",
-  4: "Il passato di Rufy e l'apparizione di Shanks",
-  5: "La terrificante forza del capitano Bagy",
-  // ... puoi continuare ad aggiungerli qui
+  // Aggiungi qui gli altri
+};
+
+// Timeline Film - la chiave è l'episodio DOPO il quale posizionarlo
+const MOVIES = {
+  429: { id: "m429", title: "Film: Strong World" },
+  578: { id: "m578", title: "Film: Z" },
+  750: { id: "m750", title: "Film: Gold" },
+  896: { id: "m896", title: "Film: Stampede" },
+  1030: { id: "m1030", title: "Film: Red" }
 };
 
 const BASE_ITA    = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
@@ -333,12 +352,10 @@ function loadLocal(){
   try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
   try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
 }
-
 function saveLocal(){
   try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
   try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
 }
-
 async function saveCloud(){
   if(!currentUser) return;
   const ref=doc(db,'users',currentUser.uid);
@@ -346,12 +363,10 @@ async function saveCloud(){
   document.getElementById('auth-sync').textContent='Salvato ✓';
   setTimeout(()=>document.getElementById('auth-sync').textContent='',2000);
 }
-
 function save(){ saveLocal(); saveCloud(); }
 
 function applyData(data){
-  watched=new Set(data.watched||[]);
-  ratings=data.ratings||{};
+  watched=new Set(data.watched||[]); ratings=data.ratings||{};
   render(); stats();
 }
 
@@ -453,7 +468,6 @@ function openModal(n,saga){
   const t=epType(n);
   document.getElementById('modal-num').textContent='Episodio '+n;
   
-  // Utilizza il titolo se presente, altrimenti fallback al numero
   const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
   document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
   
@@ -527,14 +541,44 @@ function updateNext(){
   document.querySelector('.ep.next-highlight')?.classList.remove('next-highlight');
   let next=null;
   for(let n=1;n<=TOTAL;n++){if(!watched.has(n)){next=n;break;}}
+  
   const infoEl=document.getElementById('next-info');
   const linkIta=document.getElementById('link-next-ita');
   const linkSub=document.getElementById('link-next-sub');
   const gotoEl=document.getElementById('btn-next');
+  
   if(!next){
-    infoEl.innerHTML='<span style="color:var(--accent)">Hai visto tutto! 🎉</span>';
-    linkIta.style.display='none'; linkSub.style.display='none'; gotoEl.style.display='none'; return;
+    linkIta.style.display='none'; linkSub.style.display='none'; gotoEl.style.display='none'; 
+    
+    // Funzione Countdown (Domenica mattina alle 4:00 CET)
+    function getNextEpisodeStr() {
+      const now = new Date();
+      let nextSun = new Date(now);
+      nextSun.setHours(4, 0, 0, 0);
+      nextSun.setDate(now.getDate() + ((7 - now.getDay()) % 7));
+      if (now > nextSun) nextSun.setDate(nextSun.getDate() + 7);
+      
+      const diff = nextSun - now;
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / 1000 / 60) % 60);
+      return `${d}g ${h}h ${m}m`;
+    }
+
+    infoEl.innerHTML=`<span style="color:var(--accent)">Sei in pari! 🎉 Prossimo ep: <strong id="ep-countdown">...</strong></span>`;
+    if(window.epTimer) clearInterval(window.epTimer);
+    const updateCd = () => {
+      const el = document.getElementById('ep-countdown');
+      if(el) el.textContent = getNextEpisodeStr();
+    };
+    updateCd(); 
+    window.epTimer = setInterval(updateCd, 60000); 
+    return;
   }
+
+  // Se c'è un prossimo episodio, cancella eventuali timer
+  if(window.epTimer) { clearInterval(window.epTimer); window.epTimer = null; }
+
   linkIta.style.display=''; linkSub.style.display=''; gotoEl.style.display='';
   linkIta.href=epUrl(next); linkSub.href=epUrlSub(next);
   gotoEl.dataset.ep=next;
@@ -550,22 +594,30 @@ document.getElementById('btn-next').addEventListener('click',()=>{
   filter='all';
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
-  document.querySelectorAll('.ep').forEach(c=>c.style.display='');
+  document.querySelectorAll('.ep, .ep-movie').forEach(c=>c.style.display='');
   const cell=document.querySelector(`.ep[data-ep="${n}"]`);
   if(cell){cell.scrollIntoView({behavior:'smooth',block:'center'});cell.style.outline='2.5px solid var(--accent)';setTimeout(()=>{cell.style.outline='';cell.classList.add('next-highlight');},1200);}
 });
 
 function stats(){
-  let fw=0,cw=0;
-  for(const ep of watched){epType(ep)==='filler'?fw++:cw++;}
-  document.getElementById('st-watched').textContent=watched.size;
-  document.getElementById('st-canon').textContent=cw;
-  document.getElementById('st-filler').textContent=fw;
-  document.getElementById('st-total').textContent=TOTAL;
-  document.getElementById('progress').style.width=Math.round(watched.size/TOTAL*100)+'%';
+  let fw=0, cw=0, epCount=0, movieMins=0;
   
-  // Calcolo tempo speso
-  const totalMins = watched.size * 20; // Media di 20 min a episodio
+  for(const ep of watched){
+    // Se è un film (inizia con "m"), aggiungiamo i minuti e lo saltiamo dal conteggio base
+    if(typeof ep === 'string' && ep.startsWith('m')){ movieMins += 100; continue; }
+    
+    epCount++;
+    epType(ep)==='filler'?fw++:cw++;
+  }
+  
+  document.getElementById('st-watched').textContent = epCount;
+  document.getElementById('st-canon').textContent = cw;
+  document.getElementById('st-filler').textContent = fw;
+  document.getElementById('st-total').textContent = TOTAL;
+  document.getElementById('progress').style.width = Math.round(epCount/TOTAL*100) + '%';
+  
+  // Calcolo tempo speso totale (episodi + film)
+  const totalMins = (epCount * 20) + movieMins; 
   const days = Math.floor(totalMins / 1440);
   const hours = Math.floor((totalMins % 1440) / 60);
   let timeStr = "";
@@ -588,10 +640,13 @@ function render(){
   const c=document.getElementById('container'); c.innerHTML='';
   for(const saga of SAGAS){
     const total=saga.e-saga.s+1;
+    // Modifica conteggio visti per la saga (ignorando i film stringa)
     const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
+    
     const div=document.createElement('div'); div.className='saga';
     const head=document.createElement('div'); head.className='saga-head';
     head.innerHTML=`<span class="saga-icon">${saga.icon}</span><span class="saga-name">${saga.name}</span><span class="saga-range">Ep. ${saga.s}–${saga.e}</span><span class="saga-progress" id="sp-${saga.s}">${seen}/${total}</span><button class="saga-btn" data-s="${saga.s}" data-e="${saga.e}">Segna tutti</button>`;
+    
     const grid=document.createElement('div'); grid.className='ep-grid';
     for(let n=saga.s;n<=saga.e;n++){
       const t=epType(n);
@@ -603,8 +658,28 @@ function render(){
       cell.addEventListener('mouseenter',ev=>showTT(ev,n,t));
       cell.addEventListener('mouseleave',hideTT);
       grid.appendChild(cell);
+
+      // --- LOGICA FILM ---
+      if (MOVIES[n]) {
+        const movie = MOVIES[n];
+        const mCell = document.createElement('div');
+        mCell.className = `ep-movie ${watched.has(movie.id) ? 'watched' : ''}`;
+        mCell.textContent = movie.title;
+        
+        // Logica visibilità per il film nei filtri
+        if (filter !== 'all' && filter !== 'unwatched') mCell.style.display = 'none';
+        else if (filter === 'unwatched' && watched.has(movie.id)) mCell.style.display = 'none';
+        
+        mCell.addEventListener('click', () => {
+          if(watched.has(movie.id)) watched.delete(movie.id); 
+          else watched.add(movie.id);
+          save(); render(); stats();
+        });
+        grid.appendChild(mCell);
+      }
     }
     div.appendChild(head); div.appendChild(grid); c.appendChild(div);
+    
     head.querySelector('.saga-btn').addEventListener('click',ev=>{
       ev.stopPropagation();
       const s=parseInt(ev.target.dataset.s),en=parseInt(ev.target.dataset.e);
@@ -623,6 +698,12 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{
     document.querySelectorAll('.ep').forEach(cell=>{
       cell.style.display=visible(parseInt(cell.dataset.ep),cell.dataset.t)?'':'none';
     });
+    // Rendi invisibili/visibili i film in base al filtro
+    document.querySelectorAll('.ep-movie').forEach(mCell=>{
+      if (filter !== 'all' && filter !== 'unwatched') mCell.style.display = 'none';
+      else if (filter === 'unwatched' && mCell.classList.contains('watched')) mCell.style.display = 'none';
+      else mCell.style.display = '';
+    });
   });
 });
 
@@ -632,7 +713,7 @@ document.getElementById('ep-search').addEventListener('keydown',ev=>{
   filter='all';
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
-  document.querySelectorAll('.ep').forEach(c=>c.style.display='');
+  document.querySelectorAll('.ep, .ep-movie').forEach(c=>c.style.display='');
   const cell=document.querySelector(`.ep[data-ep="${n}"]`);
   if(cell){cell.scrollIntoView({behavior:'smooth',block:'center'});cell.style.outline='2px solid var(--accent)';setTimeout(()=>cell.style.outline='',1500);}
   ev.target.value='';
