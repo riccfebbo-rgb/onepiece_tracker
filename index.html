@@ -100,7 +100,7 @@
   .ep.has-rating::before { content:''; position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background: var(--star-on); }
   .ep.next-highlight { outline: 2.5px solid var(--accent); outline-offset: 1px; }
 
-  /* Nuovi stili per i Film */
+  /* Stili per le schede dei Film */
   .ep-movie { 
     grid-column: span 2; background: #6b21a8; color: #ffffff; border: 1px solid #581c87; 
     border-radius: 6px; display: flex; align-items: center; justify-content: center; 
@@ -298,16 +298,18 @@ const EP_TITLES = {
   1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
   2: "Il cacciatore di pirati Roronoa Zoro",
   3: "Morgan mano d'ascia e l'infiltrazione",
-  // Aggiungi qui gli altri
+  // Aggiungi qui gli altri titoli se vuoi
 };
 
-// Timeline Film - la chiave è l'episodio DOPO il quale posizionarlo
+// --- ELENCO DEI FILM CON I LORO NUMERI DI PAGINA E URL ---
 const MOVIES = {
-  429: { id: "m429", title: "Film: Strong World" },
-  578: { id: "m578", title: "Film: Z" },
-  750: { id: "m750", title: "Film: Gold" },
-  896: { id: "m896", title: "Film: Stampede" },
-  1030: { id: "m1030", title: "Film: Red" }
+  130: { id: "m08", title: "Film 8: Alabasta", num: "08" },
+  325: { id: "m09", title: "Film 9: Cigliegio d'Inverno", num: "09" },
+  429: { id: "m10", title: "Film 10: Strong World", num: "10" },
+  578: { id: "m12", title: "Film 12: Z", num: "12" },
+  750: { id: "m13", title: "Film 13: Gold", num: "13" },
+  896: { id: "m14", title: "Film 14: Stampede", num: "14" },
+  1030: { id: "m15", title: "Film 15: Red", num: "15" }
 };
 
 const BASE_ITA    = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
@@ -315,10 +317,11 @@ const BASE_SUBITA = 'https://onepiecepower.com/anime18/onepiece/subita2/pagine/'
 function epUrl(n){ return BASE_ITA + String(n).padStart(3,'0'); }
 function epUrlSub(n){ return BASE_SUBITA + String(n).padStart(3,'0'); }
 
-function copyUrl(n, btn){
-  navigator.clipboard.writeText(epUrl(n)).then(()=>{
-    const orig=btn.textContent; btn.textContent='✓ Copiato!'; btn.classList.add('copied');
-    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); },1500);
+// Funzione Custom per copiare gli URL
+function copyUrlCustom(url, btn){
+  navigator.clipboard.writeText(url).then(()=>{
+    const orig = btn.textContent; btn.textContent = '✓ Copiato!'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copied'); },1500);
   });
 }
 
@@ -455,7 +458,9 @@ function renderModalStars(ep){
       const v=parseInt(s.dataset.v);
       if(ratings[ep]===v) delete ratings[ep]; else ratings[ep]=v;
       save();
-      const cell=document.querySelector(`.ep[data-ep="${ep}"]`);
+      const isMovie = typeof ep === 'string';
+      const selector = isMovie ? `.ep-movie[data-id="${ep}"]` : `.ep[data-ep="${ep}"]`;
+      const cell = document.querySelector(selector);
       if(cell) cell.classList.toggle('has-rating',!!ratings[ep]);
       renderModalStars(ep);
     });
@@ -463,26 +468,52 @@ function renderModalStars(ep){
   }
 }
 
-function openModal(n,saga){
-  modalEp=n; modalSaga=saga;
-  const t=epType(n);
-  document.getElementById('modal-num').textContent='Episodio '+n;
+// Funzione Aggiornata per aprire il Popup gestendo sia Film che Episodi
+function openModal(n, saga, movieObj = null){
+  modalEp = movieObj ? movieObj.id : n; 
+  modalSaga = saga;
   
-  const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
-  document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
+  if (movieObj) {
+    document.getElementById('modal-num').textContent = 'Film Speciale';
+    document.getElementById('modal-title').textContent = movieObj.title;
+    const badge = document.getElementById('modal-badge');
+    badge.textContent = '🎬 Film'; 
+    badge.className = 'modal-badge canon'; 
+    renderModalStars(movieObj.id);
+    
+    // Generazione Link Ufficiale Film OPPower
+    const movieUrl = 'https://onepiecepower.com/anime18/onepiece/movie/pagine/' + movieObj.num;
+    modalWatchIta.href = movieUrl;
+    modalWatchIta.textContent = '▶ GUARDA FILM';
+    modalWatchSub.style.display = 'none'; // Nascondiamo il SUB perché la pagina contiene entrambi
+    
+    modalCopy.onclick = () => copyUrlCustom(movieUrl, modalCopy);
+  } else {
+    const t = epType(n);
+    document.getElementById('modal-num').textContent = 'Episodio ' + n;
+    const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
+    document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
+    const badge = document.getElementById('modal-badge');
+    badge.textContent = typeLabel(t); badge.className = 'modal-badge ' + t;
+    renderModalStars(n);
+    
+    modalWatchIta.href = epUrl(n);
+    modalWatchIta.textContent = '▶ ITA';
+    modalWatchSub.href = epUrlSub(n);
+    modalWatchSub.style.display = '';
+    
+    modalCopy.onclick = () => copyUrlCustom(epUrl(n), modalCopy);
+  }
   
-  const badge=document.getElementById('modal-badge');
-  badge.textContent=typeLabel(t); badge.className='modal-badge '+t;
-  renderModalStars(n);
-  modalWatchIta.href=epUrl(n);
-  modalWatchSub.href=epUrlSub(n);
-  modalCopy.textContent='Copia link'; modalCopy.classList.remove('copied');
-  modalCopy.onclick=()=>copyUrl(n,modalCopy);
-  const isWatched=watched.has(n);
-  modalToggle.textContent=isWatched?'Segna come non visto':'✓ Guardato';
-  modalToggle.className='modal-btn-main '+(isWatched?'unmark':'mark');
-  const banner=document.getElementById('prev-banner');
-  if(banner){ banner.style.display='none'; modalToggle.style.display=''; }
+  modalCopy.textContent = 'Copia link'; modalCopy.classList.remove('copied');
+  
+  const isWatched = watched.has(modalEp);
+  modalToggle.textContent = isWatched ? 'Segna come non visto' : '✓ Guardato';
+  modalToggle.className = 'modal-btn-main ' + (isWatched ? 'unmark' : 'mark');
+  
+  const banner = document.getElementById('prev-banner');
+  if(banner){ banner.style.display = 'none'; modalToggle.style.display = ''; }
+  
   overlay.classList.add('open');
 }
 
@@ -491,18 +522,23 @@ modalClose.addEventListener('click',closeModal);
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
-function markEp(n,saga){
+// Funzione Globale di "Mark"
+function markEp(n, saga, isMovie=false){
   watched.add(n); save();
-  const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+  const selector = isMovie ? `.ep-movie[data-id="${n}"]` : `.ep[data-ep="${n}"]`;
+  const cell = document.querySelector(selector);
   if(cell){ cell.classList.add('watched'); if(filter==='unwatched') cell.style.display='none'; }
   stats();
-  if(saga){
+  if(saga && !isMovie){
     const seen=[...Array(saga.e-saga.s+1)].filter((_,i)=>watched.has(saga.s+i)).length;
     const sp=document.getElementById('sp-'+saga.s); if(sp) sp.textContent=seen+'/'+(saga.e-saga.s+1);
   }
 }
 
-function markPrevious(){ for(let i=1;i<modalEp;i++) watched.add(i); save(); render(); stats(); }
+function markPrevious(){ 
+  for(let i=1;i<modalEp;i++) watched.add(i); 
+  save(); render(); stats(); 
+}
 
 const prevBanner=document.createElement('div');
 prevBanner.id='prev-banner';
@@ -510,31 +546,39 @@ prevBanner.style.cssText='display:none;margin-top:10px;padding:10px 12px;backgro
 prevBanner.innerHTML=`<div style="color:var(--text-muted);margin-bottom:8px;">Ci sono episodi precedenti non segnati. Vuoi marcarli tutti come visti?</div><div style="display:flex;gap:8px;"><button id="prev-yes" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;">Sì, segna tutti</button><button id="prev-no" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:13px;">No, solo questo</button></div>`;
 document.getElementById('modal').appendChild(prevBanner);
 
-modalToggle.addEventListener('click',()=>{
-  if(modalEp===null) return;
-  const n=modalEp, saga=modalSaga;
-  const wasWatched=watched.has(n);
-  if(wasWatched){
+// Aggiornata la logica del bottone ✓ Guardato per supportare i film
+modalToggle.addEventListener('click', () => {
+  if(modalEp === null) return;
+  const isMovie = typeof modalEp === 'string';
+  const n = modalEp; 
+  const saga = modalSaga;
+  
+  if (watched.has(n)) {
     watched.delete(n); save();
-    const cell=document.querySelector(`.ep[data-ep="${n}"]`);
+    const cell = document.querySelector(isMovie ? `.ep-movie[data-id="${n}"]` : `.ep[data-ep="${n}"]`);
     if(cell) cell.classList.remove('watched');
     stats();
-    if(saga){
+    if(saga && !isMovie){
       const seen=[...Array(saga.e-saga.s+1)].filter((_,i)=>watched.has(saga.s+i)).length;
       const sp=document.getElementById('sp-'+saga.s); if(sp) sp.textContent=seen+'/'+(saga.e-saga.s+1);
     }
     closeModal(); return;
   }
-  let prevUnseen=0;
-  for(let i=1;i<n;i++){ if(!watched.has(i)) prevUnseen++; }
-  if(prevUnseen>0){
-    modalToggle.style.display='none';
-    prevBanner.style.display='block';
-    prevBanner.querySelector('#prev-yes').onclick=()=>{ markPrevious(); markEp(n,saga); prevBanner.style.display='none'; modalToggle.style.display=''; closeModal(); };
-    prevBanner.querySelector('#prev-no').onclick=()=>{ markEp(n,saga); prevBanner.style.display='none'; modalToggle.style.display=''; closeModal(); };
-  } else {
-    markEp(n,saga); closeModal();
+  
+  if (!isMovie) {
+    let prevUnseen = 0;
+    for(let i=1; i<n; i++){ if(!watched.has(i)) prevUnseen++; }
+    if(prevUnseen > 0){
+      modalToggle.style.display='none';
+      prevBanner.style.display='block';
+      prevBanner.querySelector('#prev-yes').onclick=()=>{ markPrevious(); markEp(n,saga,isMovie); prevBanner.style.display='none'; modalToggle.style.display=''; closeModal(); };
+      prevBanner.querySelector('#prev-no').onclick=()=>{ markEp(n,saga,isMovie); prevBanner.style.display='none'; modalToggle.style.display=''; closeModal(); };
+      return;
+    }
   }
+  
+  markEp(n, saga, isMovie);
+  closeModal();
 });
 
 function updateNext(){
@@ -549,8 +593,6 @@ function updateNext(){
   
   if(!next){
     linkIta.style.display='none'; linkSub.style.display='none'; gotoEl.style.display='none'; 
-    
-    // Funzione Countdown (Domenica mattina alle 4:00 CET)
     function getNextEpisodeStr() {
       const now = new Date();
       let nextSun = new Date(now);
@@ -576,7 +618,6 @@ function updateNext(){
     return;
   }
 
-  // Se c'è un prossimo episodio, cancella eventuali timer
   if(window.epTimer) { clearInterval(window.epTimer); window.epTimer = null; }
 
   linkIta.style.display=''; linkSub.style.display=''; gotoEl.style.display='';
@@ -601,22 +642,17 @@ document.getElementById('btn-next').addEventListener('click',()=>{
 
 function stats(){
   let fw=0, cw=0, epCount=0, movieMins=0;
-  
   for(const ep of watched){
-    // Se è un film (inizia con "m"), aggiungiamo i minuti e lo saltiamo dal conteggio base
     if(typeof ep === 'string' && ep.startsWith('m')){ movieMins += 100; continue; }
-    
     epCount++;
     epType(ep)==='filler'?fw++:cw++;
   }
-  
   document.getElementById('st-watched').textContent = epCount;
   document.getElementById('st-canon').textContent = cw;
   document.getElementById('st-filler').textContent = fw;
   document.getElementById('st-total').textContent = TOTAL;
   document.getElementById('progress').style.width = Math.round(epCount/TOTAL*100) + '%';
   
-  // Calcolo tempo speso totale (episodi + film)
   const totalMins = (epCount * 20) + movieMins; 
   const days = Math.floor(totalMins / 1440);
   const hours = Math.floor((totalMins % 1440) / 60);
@@ -640,7 +676,6 @@ function render(){
   const c=document.getElementById('container'); c.innerHTML='';
   for(const saga of SAGAS){
     const total=saga.e-saga.s+1;
-    // Modifica conteggio visti per la saga (ignorando i film stringa)
     const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
     
     const div=document.createElement('div'); div.className='saga';
@@ -659,21 +694,19 @@ function render(){
       cell.addEventListener('mouseleave',hideTT);
       grid.appendChild(cell);
 
-      // --- LOGICA FILM ---
+      // --- LOGICA FILM (Ora apre il Popup) ---
       if (MOVIES[n]) {
         const movie = MOVIES[n];
         const mCell = document.createElement('div');
         mCell.className = `ep-movie ${watched.has(movie.id) ? 'watched' : ''}`;
         mCell.textContent = movie.title;
+        mCell.dataset.id = movie.id;
         
-        // Logica visibilità per il film nei filtri
         if (filter !== 'all' && filter !== 'unwatched') mCell.style.display = 'none';
         else if (filter === 'unwatched' && watched.has(movie.id)) mCell.style.display = 'none';
         
         mCell.addEventListener('click', () => {
-          if(watched.has(movie.id)) watched.delete(movie.id); 
-          else watched.add(movie.id);
-          save(); render(); stats();
+          openModal(n, saga, movie);
         });
         grid.appendChild(mCell);
       }
@@ -698,7 +731,6 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{
     document.querySelectorAll('.ep').forEach(cell=>{
       cell.style.display=visible(parseInt(cell.dataset.ep),cell.dataset.t)?'':'none';
     });
-    // Rendi invisibili/visibili i film in base al filtro
     document.querySelectorAll('.ep-movie').forEach(mCell=>{
       if (filter !== 'all' && filter !== 'unwatched') mCell.style.display = 'none';
       else if (filter === 'unwatched' && mCell.classList.contains('watched')) mCell.style.display = 'none';
