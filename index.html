@@ -127,29 +127,7 @@
   .modal-btn-main.unmark { background:var(--surface); color:var(--text-muted); border:1px solid var(--border); }
   .modal-btn-main.unmark:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
 
-  .ep.has-note::after { content:''; position:absolute; top:3px; left:3px; width:5px; height:5px; border-radius:50%; background:#6b9fd4; }
-
-  /* Stats panel */
-  .stats-panel { background:var(--surface); border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; }
-  .stats-panel-title { font-size:13px; font-weight:500; margin-bottom:1rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
-  .saga-bars { display:flex; flex-direction:column; gap:8px; }
-  .saga-bar-row { display:grid; grid-template-columns:130px 1fr 40px; align-items:center; gap:8px; font-size:12px; }
-  .saga-bar-name { color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .saga-bar-track { background:var(--border); border-radius:99px; height:6px; overflow:hidden; }
-  .saga-bar-fill  { height:100%; background:var(--accent); border-radius:99px; transition:width 0.4s; }
-  .saga-bar-pct   { font-size:11px; color:var(--text-hint); text-align:right; }
-  .stats-grid2 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:1rem; }
-  .stat2 { background:var(--bg); border-radius:9px; padding:10px 14px; border:1px solid var(--border); }
-  .stat2-label { font-size:11px; color:var(--text-hint); margin-bottom:3px; }
-  .stat2-value { font-size:18px; font-weight:500; }
-  .stats-toggle { font-size:12px; color:var(--text-hint); background:none; border:none; cursor:pointer; padding:0; font-family:inherit; margin-left:auto; display:block; margin-bottom:0.5rem; }
-  .stats-toggle:hover { color:var(--text); }
-
-  /* Nota nel modale */
-  .modal-note-wrap { margin-bottom:10px; }
-  .modal-note { width:100%; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; resize:none; line-height:1.5; }
-  .modal-note:focus { outline:none; border-color:var(--accent); }
-  .modal-note-save { font-size:11px; color:var(--text-hint); margin-top:3px; display:block; }
+  .btn { font-size:12px; padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all 0.15s; }
   .btn:hover { background:var(--surface); }
   .btn.danger:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
   .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -206,17 +184,7 @@
 
   <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
 
-  <!-- Stats avanzate -->
-  <button class="stats-toggle" id="stats-toggle">▼ Statistiche avanzate</button>
-  <div class="stats-panel" id="stats-panel" style="display:none">
-    <div class="stats-panel-title">Progressi per saga</div>
-    <div class="saga-bars" id="saga-bars"></div>
-    <div class="stats-grid2">
-      <div class="stat2"><div class="stat2-label">Media voti</div><div class="stat2-value" id="st-avg">—</div></div>
-      <div class="stat2"><div class="stat2-label">Episodi votati</div><div class="stat2-value" id="st-rated">0</div></div>
-      <div class="stat2"><div class="stat2-label">Note scritte</div><div class="stat2-value" id="st-notes">0</div></div>
-    </div>
-  </div>
+  <div class="toolbar">
     <button class="filter-btn active" data-f="all">Tutti</button>
     <button class="filter-btn" data-f="canon">Canonici</button>
     <button class="filter-btn" data-f="filler">Filler</button>
@@ -257,11 +225,6 @@
     <div class="modal-badge" id="modal-badge"></div>
     <div class="modal-label">Il tuo voto</div>
     <div class="modal-stars" id="modal-stars"></div>
-    <div class="modal-note-wrap">
-      <div class="modal-label">Note</div>
-      <textarea class="modal-note" id="modal-note" rows="2" placeholder="Scrivi una nota su questo episodio..."></textarea>
-      <span class="modal-note-save" id="modal-note-save"></span>
-    </div>
     <div class="modal-row">
       <a class="modal-btn" id="modal-watch-ita" href="#" target="_blank">▶ ITA</a>
       <a class="modal-btn" id="modal-watch-sub" href="#" target="_blank">▶ SUB ITA</a>
@@ -325,24 +288,22 @@ function epType(n){
   return'canon';
 }
 
-let watched=new Set(), ratings={}, notes={}, filter='all', currentUser=null, unsubSnap=null;
+let watched=new Set(), ratings={}, filter='all', currentUser=null, unsubSnap=null;
 
 function loadLocal(){
   try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
   try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
-  try{const d=localStorage.getItem('op_n');if(d)notes=JSON.parse(d);}catch(e){}
 }
 
 function saveLocal(){
   try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
   try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
-  try{localStorage.setItem('op_n',JSON.stringify(notes));}catch(e){}
 }
 
 async function saveCloud(){
   if(!currentUser) return;
   const ref=doc(db,'users',currentUser.uid);
-  await setDoc(ref,{ watched:[...watched], ratings, notes },{merge:true});
+  await setDoc(ref,{ watched:[...watched], ratings },{merge:true});
   document.getElementById('auth-sync').textContent='Salvato ✓';
   setTimeout(()=>document.getElementById('auth-sync').textContent='',2000);
 }
@@ -352,7 +313,6 @@ function save(){ saveLocal(); saveCloud(); }
 function applyData(data){
   watched=new Set(data.watched||[]);
   ratings=data.ratings||{};
-  notes=data.notes||{};
   render(); stats();
 }
 
@@ -397,34 +357,6 @@ function typeLabel(t){
   if(t==='filler')return'🔴 Filler — puoi saltarlo';
   if(t==='mixed')return'🟡 Episodio misto';
   return'🟢 Canonico';
-}
-
-/* ---- Stats panel ---- */
-const statsToggle=document.getElementById('stats-toggle');
-const statsPanel=document.getElementById('stats-panel');
-statsToggle.addEventListener('click',()=>{
-  const open=statsPanel.style.display==='block';
-  statsPanel.style.display=open?'none':'block';
-  statsToggle.textContent=(open?'▼':'▲')+' Statistiche avanzate';
-  if(!open) renderStatsPanel();
-});
-
-function renderStatsPanel(){
-  const barsEl=document.getElementById('saga-bars'); barsEl.innerHTML='';
-  for(const saga of SAGAS){
-    const total=saga.e-saga.s+1;
-    const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
-    const pct=Math.round(seen/total*100);
-    const row=document.createElement('div'); row.className='saga-bar-row';
-    row.innerHTML=`<span class="saga-bar-name">${saga.icon} ${saga.name}</span><div class="saga-bar-track"><div class="saga-bar-fill" style="width:${pct}%"></div></div><span class="saga-bar-pct">${pct}%</span>`;
-    barsEl.appendChild(row);
-  }
-  const ratedEps=Object.keys(ratings).filter(k=>ratings[k]);
-  const avg=ratedEps.length>0?(ratedEps.reduce((s,k)=>s+ratings[k],0)/ratedEps.length).toFixed(1):'—';
-  const noteCount=Object.keys(notes).filter(k=>notes[k]&&notes[k].trim()).length;
-  document.getElementById('st-avg').textContent=avg==='—'?'—':avg+'★';
-  document.getElementById('st-rated').textContent=ratedEps.length;
-  document.getElementById('st-notes').textContent=noteCount;
 }
 
 function showTT(ev,n,type){
@@ -489,20 +421,6 @@ function openModal(n,saga){
   modalWatchSub.href=epUrlSub(n);
   modalCopy.textContent='Copia link'; modalCopy.classList.remove('copied');
   modalCopy.onclick=()=>copyUrl(n,modalCopy);
-  // Note
-  const noteEl=document.getElementById('modal-note');
-  const noteSave=document.getElementById('modal-note-save');
-  noteEl.value=notes[n]||'';
-  noteSave.textContent='';
-  noteEl.oninput=()=>{
-    notes[n]=noteEl.value;
-    save();
-    noteSave.textContent='Salvato ✓';
-    setTimeout(()=>noteSave.textContent='',1500);
-    const cell=document.querySelector(`.ep[data-ep="${n}"]`);
-    if(cell) cell.classList.toggle('has-note',!!(notes[n]&&notes[n].trim()));
-    if(statsPanel.style.display==='block') renderStatsPanel();
-  };
   const isWatched=watched.has(n);
   modalToggle.textContent=isWatched?'Segna come non visto':'✓ Guardato';
   modalToggle.className='modal-btn-main '+(isWatched?'unmark':'mark');
@@ -603,7 +521,6 @@ function stats(){
   document.getElementById('st-total').textContent=TOTAL;
   document.getElementById('progress').style.width=Math.round(watched.size/TOTAL*100)+'%';
   updateNext();
-  if(statsPanel.style.display==='block') renderStatsPanel();
 }
 
 function visible(n,type){
@@ -626,7 +543,7 @@ function render(){
     for(let n=saga.s;n<=saga.e;n++){
       const t=epType(n);
       const cell=document.createElement('div');
-      cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}${notes[n]&&notes[n].trim()?' has-note':''}`;
+      cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}`;
       cell.textContent=n; cell.dataset.ep=n; cell.dataset.t=t;
       if(!visible(n,t)) cell.style.display='none';
       cell.addEventListener('click',()=>openModal(n,saga));
@@ -673,7 +590,7 @@ document.getElementById('btn-skip-filler').addEventListener('click',()=>{
   save(); render(); stats();
 });
 document.getElementById('btn-reset').addEventListener('click',()=>{
-  if(confirm('Resettare tutti i progressi, voti e note?')){ watched.clear(); ratings={}; notes={}; save(); render(); stats(); }
+  if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; save(); render(); stats(); }
 });
 
 loadLocal(); render(); stats();
