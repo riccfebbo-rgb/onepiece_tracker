@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>One Piece — Episode Tracker</title>
 
-
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@1&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -18,40 +17,51 @@
     --mixed-bg: #fffbf0; --mixed-border: #f0d890; --mixed-text: #7a5c10;
     --accent: #1D9E75; --star-off: #ddd; --star-on: #e8a020;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  body.dark {
+    --bg: #121212; --surface: #1e1e1e; --border: #333333;
+    --text: #e0e0e0; --text-muted: #aaaaaa; --text-hint: #777777;
+    --canon-bg: #1a1a1a; --filler-bg: #2a1010; --filler-border: #4a1c1c; --filler-text: #ff8888;
+    --mixed-bg: #2a2210; --mixed-border: #4a3c1c; --mixed-text: #ffcc55;
+    --accent: #23c596; 
+  }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
   .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
-  .auth-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 10px; padding: 10px 16px; margin-bottom: 1.5rem; }
+  .auth-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 10px; padding: 10px 16px; margin-bottom: 1.5rem; transition: background 0.3s; }
   .auth-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: none; }
   .auth-name { font-size: 13px; font-weight: 500; flex: 1; }
   .auth-hint { font-size: 13px; color: var(--text-muted); flex: 1; }
   .auth-sync { font-size: 11px; color: var(--text-hint); }
-  .btn-google { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; font-family: inherit; }
+  .btn-google { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit; transition: all 0.2s;}
   .btn-google:hover { background: var(--surface); }
   .btn-google svg { width: 16px; height: 16px; flex-shrink: 0; }
-  .btn-logout { font-size: 12px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+  .btn-logout { font-size: 12px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.2s;}
   .btn-logout:hover { background: var(--surface); }
 
-  .top-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 12px; }
+  .top-bar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; flex-wrap: wrap; gap: 12px; transition: border-color 0.3s; }
   .logo-title { font-size: 24px; font-weight: 500; letter-spacing: -0.5px; }
   .logo-sub { font-family: 'Libre Baskerville', serif; font-style: italic; font-size: 14px; color: var(--text-muted); margin-left: 10px; }
   .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  .next-ep-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .next-ep-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; flex-wrap: wrap; transition: background 0.3s; }
   .next-ep-label { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
   .next-ep-info  { font-size: 14px; font-weight: 500; flex: 1; min-width: 120px; }
   .next-ep-type  { font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
   .next-ep-type.canon  { background: #e1f5ee; color: #0f6e56; }
+  body.dark .next-ep-type.canon { background: #0f4d3d; color: #8ef0d3; }
   .next-ep-type.filler { background: var(--filler-bg); color: var(--filler-text); }
   .next-ep-type.mixed  { background: var(--mixed-bg);  color: var(--mixed-text); }
   .next-btns { display: flex; gap: 8px; }
-  .next-ep-goto  { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .next-ep-goto  { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.2s;}
   .next-ep-goto:hover { background: var(--surface); }
-  .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .next-ep-watch { font-size: 12px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-family: inherit; white-space: nowrap; text-decoration: none; display: inline-block; transition: opacity 0.2s;}
   .next-ep-watch:hover { opacity: 0.85; }
 
-  .stats-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
-  .stat { background: var(--surface); border-radius: 10px; padding: 12px 16px; }
+  /* Modificata per supportare 5 colonne (aggiunto il tempo) */
+  .stats-row { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .stat { background: var(--surface); border-radius: 10px; padding: 12px 16px; transition: background 0.3s; }
   .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 4px; }
   .stat-value { font-size: 22px; font-weight: 500; }
 
@@ -63,7 +73,7 @@
   .filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
   .filter-btn:hover:not(.active) { background: var(--surface); }
   .spacer { flex: 1; min-width: 20px; }
-  .ep-search { font-size: 13px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--canon-bg); color: var(--text); font-family: inherit; width: 150px; }
+  .ep-search { font-size: 13px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--canon-bg); color: var(--text); font-family: inherit; width: 150px; transition: background 0.3s, color 0.3s; }
   .ep-search:focus { outline: none; border-color: var(--accent); }
 
   .legend { display: flex; gap: 14px; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -76,7 +86,7 @@
   .saga-name { font-size: 14px; font-weight: 500; }
   .saga-range { font-size: 12px; color: var(--text-hint); }
   .saga-progress { font-size: 12px; color: var(--text-muted); }
-  .saga-btn { margin-left: auto; font-size: 11px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+  .saga-btn { margin-left: auto; font-size: 11px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: background 0.2s;}
   .saga-btn:hover { background: var(--surface); }
 
   .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
@@ -100,9 +110,9 @@
   .tt-star.on { color:var(--star-on); }
   .tt-hint  { font-size:10px; opacity:0.3; margin-top:4px; }
 
-  .modal-overlay { position:fixed; inset:0; z-index:9999; background:rgba(26,25,23,0.5); display:none; align-items:center; justify-content:center; padding:1rem; }
+  .modal-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding:1rem; }
   .modal-overlay.open { display:flex; }
-  .modal { background:var(--bg); border-radius:16px; border:1px solid var(--border); width:100%; max-width:340px; padding:1.5rem; animation:mpop 0.18s cubic-bezier(.34,1.56,.64,1); }
+  .modal { background:var(--bg); border-radius:16px; border:1px solid var(--border); width:100%; max-width:340px; padding:1.5rem; animation:mpop 0.18s cubic-bezier(.34,1.56,.64,1); transition: background 0.3s; }
   @keyframes mpop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
   .modal-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
   .modal-ep-num   { font-size:11px; color:var(--text-hint); margin-bottom:4px; }
@@ -111,6 +121,7 @@
   .modal-close:hover { color:var(--text); }
   .modal-badge { display:inline-block; font-size:12px; padding:3px 10px; border-radius:99px; margin-bottom:1.25rem; }
   .modal-badge.canon  { background:#e1f5ee; color:#0f6e56; }
+  body.dark .modal-badge.canon { background: #0f4d3d; color: #8ef0d3; }
   .modal-badge.filler { background:var(--filler-bg); color:var(--filler-text); }
   .modal-badge.mixed  { background:var(--mixed-bg);  color:var(--mixed-text); }
   .modal-label { font-size:11px; color:var(--text-hint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
@@ -121,6 +132,7 @@
   .modal-btn { flex:1; font-size:13px; padding:9px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text-muted); cursor:pointer; font-family:inherit; text-align:center; text-decoration:none; display:block; transition:background 0.12s; }
   .modal-btn:hover { background:var(--border); }
   .modal-btn.copied { background:#e1f5ee; color:#0f6e56; border-color:#9FE1CB; }
+  body.dark .modal-btn.copied { background: #0f4d3d; color: #8ef0d3; border-color: #1D9E75; }
   .modal-btn-main { width:100%; font-size:14px; padding:11px 14px; border-radius:9px; border:none; cursor:pointer; font-family:inherit; font-weight:500; transition:all 0.15s; }
   .modal-btn-main.mark   { background:var(--accent); color:#fff; }
   .modal-btn-main.mark:hover { opacity:0.88; }
@@ -134,6 +146,7 @@
   .btn.primary:hover { opacity:0.88; }
 
   @media(max-width:500px){
+    /* Su mobile le statistiche si dividono su più righe */
     .stats-row { grid-template-columns:repeat(2,1fr); }
     .top-bar { flex-direction:column; align-items:flex-start; }
   }
@@ -149,7 +162,7 @@
     <span class="auth-sync" id="auth-sync" style="display:none"></span>
     <button class="btn-google" id="btn-login">
       <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Accedi con Google
+      Accedi
     </button>
     <button class="btn-logout" id="btn-logout" style="display:none">Esci</button>
   </div>
@@ -160,6 +173,7 @@
       <span class="logo-sub">episode tracker</span>
     </div>
     <div class="top-actions">
+      <button class="btn" id="btn-theme">🌙 Tema</button>
       <button class="btn primary" id="btn-skip-filler">Salta tutti i filler</button>
       <button class="btn danger"  id="btn-reset">Reset</button>
     </div>
@@ -180,6 +194,7 @@
     <div class="stat"><div class="stat-label">Canonici visti</div><div class="stat-value" id="st-canon">0</div></div>
     <div class="stat"><div class="stat-label">Filler saltati</div><div class="stat-value" id="st-filler">0</div></div>
     <div class="stat"><div class="stat-label">Totale episodi</div><div class="stat-value" id="st-total">0</div></div>
+    <div class="stat"><div class="stat-label">Tempo speso</div><div class="stat-value" id="st-time">0h</div></div>
   </div>
 
   <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
@@ -195,10 +210,10 @@
   </div>
 
   <div class="legend">
-    <div class="legend-item"><div class="ldot" style="background:#fff;border-color:#c8c4ba"></div>Canonico</div>
-    <div class="legend-item"><div class="ldot" style="background:#fff0f0;border-color:#f5c4c4"></div>Filler — salta</div>
-    <div class="legend-item"><div class="ldot" style="background:#fffbf0;border-color:#f0d890"></div>Misto</div>
-    <div class="legend-item"><div class="ldot" style="background:#e8e6e0;border-color:#c8c4ba;opacity:.5"></div>Visto / saltato</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--canon-bg);border-color:var(--border)"></div>Canonico</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--filler-bg);border-color:var(--filler-border)"></div>Filler — salta</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--mixed-bg);border-color:var(--mixed-border)"></div>Misto</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--surface);border-color:var(--border);opacity:.5"></div>Visto / saltato</div>
     <div class="legend-item"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--star-on);margin-right:2px;vertical-align:middle"></span>Votato</div>
   </div>
 
@@ -251,6 +266,30 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+
+// Logica per il Tema Scuro
+const btnTheme = document.getElementById('btn-theme');
+if (localStorage.getItem('op_theme') === 'dark') {
+  document.body.classList.add('dark');
+  btnTheme.textContent = '☀️ Tema';
+}
+
+btnTheme.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('op_theme', isDark ? 'dark' : 'light');
+  btnTheme.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
+});
+
+// Titoli Episodi (Aggiungi qui i tuoi titoli)
+const EP_TITLES = {
+  1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
+  2: "Il cacciatore di pirati Roronoa Zoro",
+  3: "Morgan mano d'ascia e l'infiltrazione",
+  4: "Il passato di Rufy e l'apparizione di Shanks",
+  5: "La terrificante forza del capitano Bagy",
+  // ... puoi continuare ad aggiungerli qui
+};
 
 const BASE_ITA    = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
 const BASE_SUBITA = 'https://onepiecepower.com/anime18/onepiece/subita2/pagine/';
@@ -413,7 +452,11 @@ function openModal(n,saga){
   modalEp=n; modalSaga=saga;
   const t=epType(n);
   document.getElementById('modal-num').textContent='Episodio '+n;
-  document.getElementById('modal-title').textContent='Ep. '+String(n).padStart(3,'0');
+  
+  // Utilizza il titolo se presente, altrimenti fallback al numero
+  const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
+  document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
+  
   const badge=document.getElementById('modal-badge');
   badge.textContent=typeLabel(t); badge.className='modal-badge '+t;
   renderModalStars(n);
@@ -520,6 +563,16 @@ function stats(){
   document.getElementById('st-filler').textContent=fw;
   document.getElementById('st-total').textContent=TOTAL;
   document.getElementById('progress').style.width=Math.round(watched.size/TOTAL*100)+'%';
+  
+  // Calcolo tempo speso
+  const totalMins = watched.size * 20; // Media di 20 min a episodio
+  const days = Math.floor(totalMins / 1440);
+  const hours = Math.floor((totalMins % 1440) / 60);
+  let timeStr = "";
+  if (days > 0) timeStr += days + "g ";
+  timeStr += hours + "h";
+  document.getElementById('st-time').textContent = timeStr || "0h";
+
   updateNext();
 }
 
