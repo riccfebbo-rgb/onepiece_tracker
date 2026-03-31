@@ -153,6 +153,30 @@
   .modal-btn-main.unmark { background:var(--surface); color:var(--text-muted); border:1px solid var(--border); }
   .modal-btn-main.unmark:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
 
+  .ep.has-note::after { content:''; position:absolute; top:3px; left:3px; width:5px; height:5px; border-radius:50%; background:#6b9fd4; }
+
+  /* Stats panel */
+  .stats-toggle { width:100%; text-align:left; font-size:12px; color:var(--text-hint); background:none; border:none; cursor:pointer; padding:0 0 0.5rem; font-family:inherit; display:flex; align-items:center; gap:6px; }
+  .stats-toggle:hover { color:var(--text); }
+  .stats-panel { background:var(--surface); border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; display:none; }
+  .stats-panel-title { font-size:11px; font-weight:500; color:var(--text-hint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+  .saga-bars { display:flex; flex-direction:column; gap:7px; margin-bottom:1rem; }
+  .saga-bar-row { display:grid; grid-template-columns:140px 1fr 36px; align-items:center; gap:8px; }
+  .saga-bar-name { font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .saga-bar-track { background:var(--border); border-radius:99px; height:5px; overflow:hidden; }
+  .saga-bar-fill  { height:100%; background:var(--accent); border-radius:99px; transition:width 0.4s; }
+  .saga-bar-pct   { font-size:11px; color:var(--text-hint); text-align:right; }
+  .stats-extra { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .stat-extra { background:var(--bg); border-radius:8px; padding:8px 12px; border:1px solid var(--border); }
+  .stat-extra-label { font-size:10px; color:var(--text-hint); margin-bottom:2px; }
+  .stat-extra-value { font-size:16px; font-weight:500; }
+
+  /* Note e data nel modale */
+  .modal-note { width:100%; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; resize:none; line-height:1.5; margin-bottom:4px; }
+  .modal-note:focus { outline:none; border-color:var(--accent); }
+  .modal-note-status { font-size:10px; color:var(--text-hint); margin-bottom:10px; display:block; min-height:14px; }
+  .modal-date { font-size:11px; color:var(--text-hint); margin-bottom:10px; }
+
   .btn { font-size:12px; padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all 0.15s; }
   .btn:hover { background:var(--surface); }
   .btn.danger:hover { background:var(--filler-bg); color:var(--filler-text); border-color:var(--filler-border); }
@@ -212,7 +236,16 @@
 
   <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
 
-  <div class="toolbar">
+  <button class="stats-toggle" id="stats-toggle">▼ Statistiche per saga</button>
+  <div class="stats-panel" id="stats-panel">
+    <div class="stats-panel-title">Progressi per saga</div>
+    <div class="saga-bars" id="saga-bars"></div>
+    <div class="stats-extra">
+      <div class="stat-extra"><div class="stat-extra-label">Media voti</div><div class="stat-extra-value" id="sx-avg">—</div></div>
+      <div class="stat-extra"><div class="stat-extra-label">Episodi votati</div><div class="stat-extra-value" id="sx-rated">0</div></div>
+      <div class="stat-extra"><div class="stat-extra-label">Note scritte</div><div class="stat-extra-value" id="sx-notes">0</div></div>
+    </div>
+  </div>
     <button class="filter-btn active" data-f="all">Tutti</button>
     <button class="filter-btn" data-f="canon">Canonici</button>
     <button class="filter-btn" data-f="filler">Filler</button>
@@ -253,6 +286,10 @@
     <div class="modal-badge" id="modal-badge"></div>
     <div class="modal-label">Il tuo voto</div>
     <div class="modal-stars" id="modal-stars"></div>
+    <div class="modal-label">Note</div>
+    <textarea class="modal-note" id="modal-note" rows="2" placeholder="Scrivi una nota..."></textarea>
+    <span class="modal-note-status" id="modal-note-status"></span>
+    <div class="modal-date" id="modal-date"></div>
     <div class="modal-row">
       <a class="modal-btn" id="modal-watch-ita" href="#" target="_blank">▶ ITA</a>
       <a class="modal-btn" id="modal-watch-sub" href="#" target="_blank">▶ SUB ITA</a>
@@ -292,14 +329,6 @@ btnTheme.addEventListener('click', () => {
   localStorage.setItem('op_theme', isDark ? 'dark' : 'light');
   btnTheme.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
 });
-
-// Titoli Episodi 
-const EP_TITLES = {
-  1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
-  2: "Il cacciatore di pirati Roronoa Zoro",
-  3: "Morgan mano d'ascia e l'infiltrazione",
-  // Aggiungi qui gli altri titoli se vuoi
-};
 
 // --- ELENCO DEI FILM CON I LORO NUMERI DI PAGINA E URL ---
 const MOVIES = {
@@ -349,20 +378,24 @@ function epType(n){
   return'canon';
 }
 
-let watched=new Set(), ratings={}, filter='all', currentUser=null, unsubSnap=null;
+let watched=new Set(), ratings={}, notes={}, watchDates={}, filter='all', currentUser=null, unsubSnap=null;
 
 function loadLocal(){
   try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
   try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
+  try{const d=localStorage.getItem('op_n');if(d)notes=JSON.parse(d);}catch(e){}
+  try{const d=localStorage.getItem('op_d');if(d)watchDates=JSON.parse(d);}catch(e){}
 }
 function saveLocal(){
   try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
   try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
+  try{localStorage.setItem('op_n',JSON.stringify(notes));}catch(e){}
+  try{localStorage.setItem('op_d',JSON.stringify(watchDates));}catch(e){}
 }
 async function saveCloud(){
   if(!currentUser) return;
   const ref=doc(db,'users',currentUser.uid);
-  await setDoc(ref,{ watched:[...watched], ratings },{merge:true});
+  await setDoc(ref,{ watched:[...watched], ratings, notes, watchDates },{merge:true});
   document.getElementById('auth-sync').textContent='Salvato ✓';
   setTimeout(()=>document.getElementById('auth-sync').textContent='',2000);
 }
@@ -370,6 +403,7 @@ function save(){ saveLocal(); saveCloud(); }
 
 function applyData(data){
   watched=new Set(data.watched||[]); ratings=data.ratings||{};
+  notes=data.notes||{}; watchDates=data.watchDates||{};
   render(); stats();
 }
 
@@ -414,6 +448,33 @@ function typeLabel(t){
   if(t==='filler')return'🔴 Filler — puoi saltarlo';
   if(t==='mixed')return'🟡 Episodio misto';
   return'🟢 Canonico';
+}
+
+/* ---- Stats panel ---- */
+const statsToggle=document.getElementById('stats-toggle');
+const statsPanel=document.getElementById('stats-panel');
+statsToggle.addEventListener('click',()=>{
+  const open=statsPanel.style.display==='block';
+  statsPanel.style.display=open?'none':'block';
+  statsToggle.textContent=(open?'▼':'▲')+' Statistiche per saga';
+  if(!open) renderStatsPanel();
+});
+function renderStatsPanel(){
+  const barsEl=document.getElementById('saga-bars'); barsEl.innerHTML='';
+  for(const saga of SAGAS){
+    const total=saga.e-saga.s+1;
+    const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
+    const pct=Math.round(seen/total*100);
+    const row=document.createElement('div'); row.className='saga-bar-row';
+    row.innerHTML=`<span class="saga-bar-name">${saga.icon} ${saga.name}</span><div class="saga-bar-track"><div class="saga-bar-fill" style="width:${pct}%"></div></div><span class="saga-bar-pct">${pct}%</span>`;
+    barsEl.appendChild(row);
+  }
+  const ratedKeys=Object.keys(ratings).filter(k=>ratings[k]);
+  const avg=ratedKeys.length?(ratedKeys.reduce((s,k)=>s+ratings[k],0)/ratedKeys.length).toFixed(1):'—';
+  const noteCount=Object.keys(notes).filter(k=>notes[k]&&notes[k].trim()).length;
+  document.getElementById('sx-avg').textContent=avg==='—'?'—':avg+'★';
+  document.getElementById('sx-rated').textContent=ratedKeys.length;
+  document.getElementById('sx-notes').textContent=noteCount;
 }
 
 function showTT(ev,n,type){
@@ -491,8 +552,7 @@ function openModal(n, saga, movieObj = null){
   } else {
     const t = epType(n);
     document.getElementById('modal-num').textContent = 'Episodio ' + n;
-    const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
-    document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
+    document.getElementById('modal-title').textContent = 'Ep. ' + String(n).padStart(3, '0');
     const badge = document.getElementById('modal-badge');
     badge.textContent = typeLabel(t); badge.className = 'modal-badge ' + t;
     renderModalStars(n);
@@ -506,7 +566,30 @@ function openModal(n, saga, movieObj = null){
   }
   
   modalCopy.textContent = 'Copia link'; modalCopy.classList.remove('copied');
-  
+
+  // Nota
+  const noteEl=document.getElementById('modal-note');
+  const noteStatus=document.getElementById('modal-note-status');
+  const epKey=movieObj?movieObj.id:n;
+  noteEl.value=notes[epKey]||'';
+  noteStatus.textContent='';
+  noteEl.oninput=()=>{
+    notes[epKey]=noteEl.value;
+    save();
+    noteStatus.textContent='Salvato ✓';
+    setTimeout(()=>noteStatus.textContent='',1500);
+    const isMovie=typeof epKey==='string';
+    const sel=isMovie?`.ep-movie[data-id="${epKey}"]`:`.ep[data-ep="${epKey}"]`;
+    const cell=document.querySelector(sel);
+    if(cell) cell.classList.toggle('has-note',!!(notes[epKey]&&notes[epKey].trim()));
+    if(statsPanel.style.display==='block') renderStatsPanel();
+  };
+
+  // Data vista
+  const dateEl=document.getElementById('modal-date');
+  const wd=watchDates[epKey];
+  dateEl.textContent=wd?'Visto il: '+new Date(wd).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}):'';
+
   const isWatched = watched.has(modalEp);
   modalToggle.textContent = isWatched ? 'Segna come non visto' : '✓ Guardato';
   modalToggle.className = 'modal-btn-main ' + (isWatched ? 'unmark' : 'mark');
@@ -524,7 +607,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
 // Funzione Globale di "Mark"
 function markEp(n, saga, isMovie=false){
-  watched.add(n); save();
+  watched.add(n);
+  if(!watchDates[n]) watchDates[n]=new Date().toISOString();
+  save();
   const selector = isMovie ? `.ep-movie[data-id="${n}"]` : `.ep[data-ep="${n}"]`;
   const cell = document.querySelector(selector);
   if(cell){ cell.classList.add('watched'); if(filter==='unwatched') cell.style.display='none'; }
@@ -662,6 +747,7 @@ function stats(){
   document.getElementById('st-time').textContent = timeStr || "0h";
 
   updateNext();
+  if(statsPanel.style.display==='block') renderStatsPanel();
 }
 
 function visible(n,type){
@@ -686,7 +772,7 @@ function render(){
     for(let n=saga.s;n<=saga.e;n++){
       const t=epType(n);
       const cell=document.createElement('div');
-      cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}`;
+      cell.className=`ep ${t}${watched.has(n)?' watched':''}${ratings[n]?' has-rating':''}${notes[n]&&notes[n].trim()?' has-note':''}`;
       cell.textContent=n; cell.dataset.ep=n; cell.dataset.t=t;
       if(!visible(n,t)) cell.style.display='none';
       cell.addEventListener('click',()=>openModal(n,saga));
@@ -756,7 +842,7 @@ document.getElementById('btn-skip-filler').addEventListener('click',()=>{
   save(); render(); stats();
 });
 document.getElementById('btn-reset').addEventListener('click',()=>{
-  if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; save(); render(); stats(); }
+  if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; notes={}; watchDates={}; save(); render(); stats(); }
 });
 
 loadLocal(); render(); stats();
