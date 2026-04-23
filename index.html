@@ -50,7 +50,10 @@
   .back-btn { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0 0 6px 0; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
   .back-btn:hover { color: var(--text); }
 
-  /* HOME CARDS */
+  /* HOME CARDS & SEARCH */
+  .home-search { font-size: 14px; padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: inherit; width: 100%; max-width: 250px; transition: all 0.3s; }
+  .home-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.15); background: var(--bg); }
+  
   .anime-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 1rem; }
   .anime-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
   .anime-card:hover { transform: translateY(-4px); border-color: var(--accent); }
@@ -178,6 +181,7 @@
 
   @media(max-width:500px){
     .stats-row { grid-template-columns:repeat(2,1fr); }
+    .home-search { max-width: 100%; margin-top: 10px; }
   }
 </style>
 </head>
@@ -200,11 +204,12 @@
   </div>
 
   <div id="home-view">
-    <div class="top-bar" style="margin-bottom: 1rem;">
+    <div class="top-bar" style="margin-bottom: 1rem; align-items: center;">
       <div>
         <span class="logo-title">Anime Tracker</span>
         <span class="logo-sub">La tua libreria</span>
       </div>
+      <input type="text" id="home-search" class="home-search" placeholder="Cerca anime...">
     </div>
     <div class="anime-cards" id="anime-cards-container">
       </div>
@@ -392,11 +397,12 @@ btnTheme.addEventListener('click', () => {
   btnTheme.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
 });
 
-// --- GENERAZIONE HOME ---
+// --- GENERAZIONE HOME & RICERCA ---
 const cardsContainer = document.getElementById('anime-cards-container');
 Object.values(ANIME_DB).forEach(anime => {
   const card = document.createElement('div');
   card.className = 'anime-card';
+  card.dataset.title = anime.title.toLowerCase(); // Salviamo il titolo per la ricerca
   card.innerHTML = `
     <img class="card-image" src="${anime.image}" alt="Locandina di ${anime.title}">
     <h3>${anime.title}</h3>
@@ -407,6 +413,18 @@ Object.values(ANIME_DB).forEach(anime => {
     openTracker();
   });
   cardsContainer.appendChild(card);
+});
+
+// Logica per la barra di ricerca della Home
+document.getElementById('home-search').addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase();
+  document.querySelectorAll('.anime-card').forEach(card => {
+    if (card.dataset.title.includes(term)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
 });
 
 // --- NAVIGATION LOGIC ---
