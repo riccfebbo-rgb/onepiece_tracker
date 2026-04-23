@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>One Piece — Episode Tracker</title>
+<title>Anime Tracker</title>
 
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
@@ -29,7 +29,9 @@
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
   .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
-  .auth-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 10px; padding: 10px 16px; margin-bottom: 1.5rem; transition: background 0.3s; }
+  .global-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 2rem; flex-wrap: wrap;}
+  
+  .auth-bar { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 10px; padding: 10px 16px; flex: 1; transition: background 0.3s; }
   .auth-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: none; }
   .auth-name { font-size: 13px; font-weight: 500; flex: 1; }
   .auth-hint { font-size: 13px; color: var(--text-muted); flex: 1; }
@@ -44,7 +46,19 @@
   .logo-title { font-size: 24px; font-weight: 500; letter-spacing: -0.5px; }
   .logo-sub { font-family: 'Libre Baskerville', serif; font-style: italic; font-size: 14px; color: var(--text-muted); margin-left: 10px; }
   .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  
+  .back-btn { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0 0 6px 0; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+  .back-btn:hover { color: var(--text); }
 
+  /* HOME CARDS */
+  .anime-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 1rem; }
+  .anime-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 1.5rem; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+  .anime-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .anime-card h3 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .anime-card p { font-size: 13px; color: var(--text-muted); }
+  .card-icon { font-size: 48px; margin-bottom: 12px; display: inline-block; }
+
+  /* TRACKER ELEMENTS */
   .next-ep-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; flex-wrap: wrap; transition: background 0.3s; }
   .next-ep-label { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
   .next-ep-info  { font-size: 14px; font-weight: 500; flex: 1; min-width: 120px; }
@@ -100,7 +114,7 @@
   .ep.has-rating::before { content:''; position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background: var(--star-on); }
   .ep.next-highlight { outline: 2.5px solid var(--accent); outline-offset: 1px; }
 
-  /* Stili per le schede dei Film */
+  /* Schede dei Film */
   .ep-movie { 
     grid-column: span 2; background: #6b21a8; color: #ffffff; border: 1px solid #581c87; 
     border-radius: 6px; display: flex; align-items: center; justify-content: center; 
@@ -115,6 +129,7 @@
     background:currentColor; border-radius:1px; transform:translateY(-50%) rotate(-3deg);
   }
 
+  /* TOOLTIP & MODALS */
   .tt { position:fixed; pointer-events:none; z-index:8888; display:none; background:#1c1a18; color:#f5f3ef; border-radius:10px; padding:9px 12px; font-size:12px; line-height:1.5; width:180px; }
   .tt-num  { font-size:10px; opacity:0.45; margin-bottom:1px; }
   .tt-type { font-size:11px; margin-bottom:7px; }
@@ -161,76 +176,93 @@
 
   @media(max-width:500px){
     .stats-row { grid-template-columns:repeat(2,1fr); }
-    .top-bar { flex-direction:column; align-items:flex-start; }
   }
 </style>
 </head>
 <body>
 <div class="page">
 
-  <div class="auth-bar" id="auth-bar">
-    <img class="auth-avatar" id="auth-avatar" src="" alt="">
-    <span class="auth-name" id="auth-name" style="display:none"></span>
-    <span class="auth-hint" id="auth-hint">Accedi per sincronizzare i progressi su tutti i dispositivi</span>
-    <span class="auth-sync" id="auth-sync" style="display:none"></span>
-    <button class="btn-google" id="btn-login">
-      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Accedi
-    </button>
-    <button class="btn-logout" id="btn-logout" style="display:none">Esci</button>
-  </div>
-
-  <div class="top-bar">
-    <div>
-      <span class="logo-title">One Piece</span>
-      <span class="logo-sub">episode tracker</span>
+  <div class="global-header">
+    <div class="auth-bar" id="auth-bar">
+      <img class="auth-avatar" id="auth-avatar" src="" alt="">
+      <span class="auth-name" id="auth-name" style="display:none"></span>
+      <span class="auth-hint" id="auth-hint">Accedi per il sync Cloud</span>
+      <span class="auth-sync" id="auth-sync" style="display:none"></span>
+      <button class="btn-google" id="btn-login">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Accedi
+      </button>
+      <button class="btn-logout" id="btn-logout" style="display:none">Esci</button>
     </div>
-    <div class="top-actions">
-      <button class="btn" id="btn-theme">🌙 Tema</button>
-      <button class="btn primary" id="btn-skip-filler">Salta tutti i filler</button>
-      <button class="btn danger"  id="btn-reset">Reset</button>
+    <button class="btn" id="btn-theme" style="margin-top: 5px;">🌙 Tema</button>
+  </div>
+
+  <div id="home-view">
+    <div class="top-bar" style="margin-bottom: 1rem;">
+      <div>
+        <span class="logo-title">Anime Tracker</span>
+        <span class="logo-sub">La tua libreria</span>
+      </div>
     </div>
+    <div class="anime-cards" id="anime-cards-container">
+      </div>
   </div>
 
-  <div class="next-ep-bar">
-    <span class="next-ep-label">Prossimo da vedere</span>
-    <span class="next-ep-info" id="next-info">—</span>
-    <div class="next-btns">
-      <button class="next-ep-goto" id="btn-next">Scorri ↓</button>
-      <a class="next-ep-watch" id="link-next-ita" href="#" target="_blank">▶ ITA</a>
-      <a class="next-ep-watch" id="link-next-sub" href="#" target="_blank" style="background:var(--surface);color:var(--text-muted);border-color:var(--border);">▶ SUB</a>
+  <div id="tracker-view" style="display: none;">
+    <div class="top-bar">
+      <div>
+        <button class="back-btn" id="btn-back">← Torna alla Home</button>
+        <div style="margin-top:4px;">
+          <span class="logo-title" id="tracker-title">Titolo</span>
+          <span class="logo-sub" id="tracker-sub">sub</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn primary" id="btn-skip-filler">Salta tutti i filler</button>
+        <button class="btn danger"  id="btn-reset">Reset</button>
+      </div>
     </div>
+
+    <div class="next-ep-bar">
+      <span class="next-ep-label">Prossimo da vedere</span>
+      <span class="next-ep-info" id="next-info">—</span>
+      <div class="next-btns">
+        <button class="next-ep-goto" id="btn-next">Scorri ↓</button>
+        <a class="next-ep-watch" id="link-next-ita" href="#" target="_blank">▶ ITA</a>
+        <a class="next-ep-watch" id="link-next-sub" href="#" target="_blank" style="background:var(--surface);color:var(--text-muted);border-color:var(--border);">▶ SUB</a>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Visti</div><div class="stat-value" id="st-watched">0</div></div>
+      <div class="stat"><div class="stat-label">Canonici visti</div><div class="stat-value" id="st-canon">0</div></div>
+      <div class="stat"><div class="stat-label">Filler saltati</div><div class="stat-value" id="st-filler">0</div></div>
+      <div class="stat"><div class="stat-label">Totale episodi</div><div class="stat-value" id="st-total">0</div></div>
+      <div class="stat"><div class="stat-label">Tempo speso</div><div class="stat-value" id="st-time">0h</div></div>
+    </div>
+
+    <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+    <div class="toolbar">
+      <button class="filter-btn active" data-f="all">Tutti</button>
+      <button class="filter-btn" data-f="canon">Canonici</button>
+      <button class="filter-btn" data-f="filler">Filler</button>
+      <button class="filter-btn" data-f="unwatched">Da vedere</button>
+      <button class="filter-btn" data-f="rated">Votati</button>
+      <div class="spacer"></div>
+      <input class="ep-search" type="number" placeholder="Vai all'ep. #" id="ep-search" min="1">
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="ldot" style="background:var(--canon-bg);border-color:var(--border)"></div>Canonico</div>
+      <div class="legend-item"><div class="ldot" style="background:var(--filler-bg);border-color:var(--filler-border)"></div>Filler — salta</div>
+      <div class="legend-item"><div class="ldot" style="background:var(--mixed-bg);border-color:var(--mixed-border)"></div>Misto</div>
+      <div class="legend-item"><div class="ldot" style="background:var(--surface);border-color:var(--border);opacity:.5"></div>Visto / saltato</div>
+      <div class="legend-item"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--star-on);margin-right:2px;vertical-align:middle"></span>Votato</div>
+    </div>
+
+    <div id="container"></div>
   </div>
-
-  <div class="stats-row">
-    <div class="stat"><div class="stat-label">Visti</div><div class="stat-value" id="st-watched">0</div></div>
-    <div class="stat"><div class="stat-label">Canonici visti</div><div class="stat-value" id="st-canon">0</div></div>
-    <div class="stat"><div class="stat-label">Filler saltati</div><div class="stat-value" id="st-filler">0</div></div>
-    <div class="stat"><div class="stat-label">Totale episodi</div><div class="stat-value" id="st-total">0</div></div>
-    <div class="stat"><div class="stat-label">Tempo speso</div><div class="stat-value" id="st-time">0h</div></div>
-  </div>
-
-  <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
-
-  <div class="toolbar">
-    <button class="filter-btn active" data-f="all">Tutti</button>
-    <button class="filter-btn" data-f="canon">Canonici</button>
-    <button class="filter-btn" data-f="filler">Filler</button>
-    <button class="filter-btn" data-f="unwatched">Da vedere</button>
-    <button class="filter-btn" data-f="rated">Votati</button>
-    <div class="spacer"></div>
-    <input class="ep-search" type="number" placeholder="Vai all'ep. #" id="ep-search" min="1">
-  </div>
-
-  <div class="legend">
-    <div class="legend-item"><div class="ldot" style="background:var(--canon-bg);border-color:var(--border)"></div>Canonico</div>
-    <div class="legend-item"><div class="ldot" style="background:var(--filler-bg);border-color:var(--filler-border)"></div>Filler — salta</div>
-    <div class="legend-item"><div class="ldot" style="background:var(--mixed-bg);border-color:var(--mixed-border)"></div>Misto</div>
-    <div class="legend-item"><div class="ldot" style="background:var(--surface);border-color:var(--border);opacity:.5"></div>Visto / saltato</div>
-    <div class="legend-item"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--star-on);margin-right:2px;vertical-align:middle"></span>Votato</div>
-  </div>
-
-  <div id="container"></div>
 </div>
 
 <div class="tt" id="tt">
@@ -280,6 +312,69 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
+// --- ANIME DATABASE ---
+const ANIME_DB = {
+  onepiece: {
+    id: 'onepiece', title: "One Piece", sub: "episode tracker", icon: "☠️",
+    baseIta: 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/',
+    baseSub: 'https://onepiecepower.com/anime18/onepiece/subita2/pagine/',
+    filler: [[54,60],[98,99],[102,102],[131,143],[196,206],[220,225],[279,283],[291,292],[303,303],[317,319],[326,336],[382,384],[406,407],[426,429],[457,458],[492,492],[542,542],[575,578],[590,590],[626,627],[747,750],[780,782],[895,896],[907,907],[1029,1030]],
+    mixed: [[45,47],[61,61],[68,69],[101,101],[213,216]],
+    sagas: [
+      {name:"Mare Orientale",icon:"🌊",s:1,e:61},
+      {name:"Arabasta",icon:"🏜️",s:62,e:135},
+      {name:"Skypiea",icon:"☁️",s:136,e:206},
+      {name:"Water Seven & Enies Lobby",icon:"🚂",s:207,e:325},
+      {name:"Thriller Bark",icon:"🦇",s:326,e:384},
+      {name:"Sabaody & Marineford",icon:"⚓",s:385,e:516},
+      {name:"Isola degli Uomini-Pesce",icon:"🐟",s:517,e:574},
+      {name:"Punk Hazard",icon:"🧪",s:575,e:629},
+      {name:"Dressrosa",icon:"🌹",s:630,e:699},
+      {name:"Zou & Whole Cake Island",icon:"🍰",s:700,e:877},
+      {name:"Wano",icon:"🗡️",s:878,e:1085},
+      {name:"Egghead",icon:"🤖",s:1086,e:1155},
+    ],
+    movies: {
+      130: { id: "m08", title: "Film 8: Alabasta", num: "08" },
+      325: { id: "m09", title: "Film 9: Cigliegio d'Inverno", num: "09" },
+      429: { id: "m10", title: "Film 10: Strong World", num: "10" },
+      578: { id: "m12", title: "Film 12: Z", num: "12" },
+      750: { id: "m13", title: "Film 13: Gold", num: "13" },
+      896: { id: "m14", title: "Film 14: Stampede", num: "14" },
+      1030: { id: "m15", title: "Film 15: Red", num: "15" }
+    },
+    movieUrl: 'https://onepiecepower.com/anime18/onepiece/movie/pagine/',
+    titles: {
+      1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
+      2: "Il cacciatore di pirati Roronoa Zoro",
+      3: "Morgan mano d'ascia e l'infiltrazione",
+    }
+  },
+  hxh: {
+    id: 'hxh', title: "Hunter x Hunter", sub: "2011 tracker", icon: "🎣",
+    baseIta: 'https://onepiecepower.com/anime18/hunter-x-hunter-2-edizione-c/episodi/pagine/',
+    baseSub: 'https://onepiecepower.com/anime18/hunter-x-hunter-2-edizione-c/episodi/pagine/', 
+    filler: [[13,13], [26,26]],
+    mixed: [],
+    sagas: [
+      {name:"Esame Hunter",icon:"🎯",s:1,e:21},
+      {name:"Famiglia Zoldyck",icon:"🚪",s:22,e:26},
+      {name:"Arena Celeste",icon:"🏟️",s:27,e:36},
+      {name:"Yorknew City",icon:"🕷️",s:37,e:58},
+      {name:"Greed Island",icon:"🎮",s:59,e:75},
+      {name:"Formichimere",icon:"🐜",s:76,e:136},
+      {name:"Elezione del Presidente",icon:"🗳️",s:137,e:148}
+    ],
+    movies: {},
+    movieUrl: '',
+    titles: {}
+  }
+};
+
+let currentAnime = null;
+let watched = new Set(), ratings = {}, filter = 'all';
+let currentUser = null, unsubSnap = null, userCloudData = null;
+
 // Dark Mode Toggle
 const btnTheme = document.getElementById('btn-theme');
 if (localStorage.getItem('op_theme') === 'dark') {
@@ -293,31 +388,54 @@ btnTheme.addEventListener('click', () => {
   btnTheme.textContent = isDark ? '☀️ Tema' : '🌙 Tema';
 });
 
-// Titoli Episodi 
-const EP_TITLES = {
-  1: "Sono Rufy! L'uomo che diventerà il Re dei Pirati!",
-  2: "Il cacciatore di pirati Roronoa Zoro",
-  3: "Morgan mano d'ascia e l'infiltrazione",
-  // Aggiungi qui gli altri titoli se vuoi
-};
+// --- GENERAZIONE HOME ---
+const cardsContainer = document.getElementById('anime-cards-container');
+Object.values(ANIME_DB).forEach(anime => {
+  const card = document.createElement('div');
+  card.className = 'anime-card';
+  card.innerHTML = `
+    <span class="card-icon">${anime.icon}</span>
+    <h3>${anime.title}</h3>
+    <p>${anime.sagas[anime.sagas.length-1].e} Episodi</p>
+  `;
+  card.addEventListener('click', () => {
+    currentAnime = anime.id;
+    openTracker();
+  });
+  cardsContainer.appendChild(card);
+});
 
-// --- ELENCO DEI FILM CON I LORO NUMERI DI PAGINA E URL ---
-const MOVIES = {
-  130: { id: "m08", title: "Film 8: Alabasta", num: "08" },
-  325: { id: "m09", title: "Film 9: Cigliegio d'Inverno", num: "09" },
-  429: { id: "m10", title: "Film 10: Strong World", num: "10" },
-  578: { id: "m12", title: "Film 12: Z", num: "12" },
-  750: { id: "m13", title: "Film 13: Gold", num: "13" },
-  896: { id: "m14", title: "Film 14: Stampede", num: "14" },
-  1030: { id: "m15", title: "Film 15: Red", num: "15" }
-};
+// --- NAVIGATION LOGIC ---
+function openTracker() {
+  document.getElementById('home-view').style.display = 'none';
+  document.getElementById('tracker-view').style.display = 'block';
+  
+  const anime = ANIME_DB[currentAnime];
+  document.getElementById('tracker-title').textContent = anime.title;
+  document.getElementById('tracker-sub').textContent = anime.sub;
+  
+  filter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-f="all"]').classList.add('active');
+  
+  loadLocal();
+  if (userCloudData) {
+    applyData(userCloudData);
+  } else {
+    render(); stats();
+  }
+}
 
-const BASE_ITA    = 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/';
-const BASE_SUBITA = 'https://onepiecepower.com/anime18/onepiece/subita2/pagine/';
-function epUrl(n){ return BASE_ITA + String(n).padStart(3,'0'); }
-function epUrlSub(n){ return BASE_SUBITA + String(n).padStart(3,'0'); }
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('tracker-view').style.display = 'none';
+  document.getElementById('home-view').style.display = 'block';
+  currentAnime = null;
+});
 
-// Funzione Custom per copiare gli URL
+// --- DATA LOGIC ---
+function epUrl(n){ return ANIME_DB[currentAnime].baseIta + String(n).padStart(3,'0'); }
+function epUrlSub(n){ return ANIME_DB[currentAnime].baseSub + String(n).padStart(3,'0'); }
+
 function copyUrlCustom(url, btn){
   navigator.clipboard.writeText(url).then(()=>{
     const orig = btn.textContent; btn.textContent = '✓ Copiato!'; btn.classList.add('copied');
@@ -325,58 +443,58 @@ function copyUrlCustom(url, btn){
   });
 }
 
-const FILLER=[[54,60],[98,99],[102,102],[131,143],[196,206],[220,225],[279,283],[291,292],[303,303],[317,319],[326,336],[382,384],[406,407],[426,429],[457,458],[492,492],[542,542],[575,578],[590,590],[626,627],[747,750],[780,782],[895,896],[907,907],[1029,1030]];
-const MIXED=[[45,47],[61,61],[68,69],[101,101],[213,216]];
-const SAGAS=[
-  {name:"Mare Orientale",icon:"🌊",s:1,e:61},
-  {name:"Arabasta",icon:"🏜️",s:62,e:135},
-  {name:"Skypiea",icon:"☁️",s:136,e:206},
-  {name:"Water Seven & Enies Lobby",icon:"🚂",s:207,e:325},
-  {name:"Thriller Bark",icon:"🦇",s:326,e:384},
-  {name:"Sabaody & Marineford",icon:"⚓",s:385,e:516},
-  {name:"Isola degli Uomini-Pesce",icon:"🐟",s:517,e:574},
-  {name:"Punk Hazard",icon:"🧪",s:575,e:629},
-  {name:"Dressrosa",icon:"🌹",s:630,e:699},
-  {name:"Zou & Whole Cake Island",icon:"🍰",s:700,e:877},
-  {name:"Wano",icon:"🗡️",s:878,e:1085},
-  {name:"Egghead",icon:"🤖",s:1086,e:1155},
-];
-const TOTAL=SAGAS[SAGAS.length-1].e;
+function getTotal() {
+  const s = ANIME_DB[currentAnime].sagas;
+  return s[s.length-1].e;
+}
 
 function epType(n){
-  for(const[s,e]of FILLER)if(n>=s&&n<=e)return'filler';
-  for(const[s,e]of MIXED)if(n>=s&&n<=e)return'mixed';
+  const dbAnime = ANIME_DB[currentAnime];
+  for(const[s,e]of dbAnime.filler)if(n>=s&&n<=e)return'filler';
+  for(const[s,e]of dbAnime.mixed)if(n>=s&&n<=e)return'mixed';
   return'canon';
 }
 
-let watched=new Set(), ratings={}, filter='all', currentUser=null, unsubSnap=null;
-
 function loadLocal(){
-  try{const d=localStorage.getItem('op_w');if(d)watched=new Set(JSON.parse(d));}catch(e){}
-  try{const d=localStorage.getItem('op_r');if(d)ratings=JSON.parse(d);}catch(e){}
+  watched = new Set(); ratings = {};
+  if(!currentAnime) return;
+  try{const d=localStorage.getItem(`${currentAnime}_w`);if(d)watched=new Set(JSON.parse(d));}catch(e){}
+  try{const d=localStorage.getItem(`${currentAnime}_r`);if(d)ratings=JSON.parse(d);}catch(e){}
 }
 function saveLocal(){
-  try{localStorage.setItem('op_w',JSON.stringify([...watched]));}catch(e){}
-  try{localStorage.setItem('op_r',JSON.stringify(ratings));}catch(e){}
+  if(!currentAnime) return;
+  try{localStorage.setItem(`${currentAnime}_w`,JSON.stringify([...watched]));}catch(e){}
+  try{localStorage.setItem(`${currentAnime}_r`,JSON.stringify(ratings));}catch(e){}
 }
+
 async function saveCloud(){
-  if(!currentUser) return;
+  if(!currentUser || !currentAnime) return;
   const ref=doc(db,'users',currentUser.uid);
-  await setDoc(ref,{ watched:[...watched], ratings },{merge:true});
+  await setDoc(ref,{ 
+    [currentAnime]: { watched:[...watched], ratings } 
+  },{merge:true});
   document.getElementById('auth-sync').textContent='Salvato ✓';
   setTimeout(()=>document.getElementById('auth-sync').textContent='',2000);
 }
 function save(){ saveLocal(); saveCloud(); }
 
 function applyData(data){
-  watched=new Set(data.watched||[]); ratings=data.ratings||{};
+  if(!currentAnime) return;
+  const animeData = data[currentAnime] || {};
+  watched=new Set(animeData.watched||[]); 
+  ratings=animeData.ratings||{};
   render(); stats();
 }
 
 function subscribeCloud(uid){
   if(unsubSnap) unsubSnap();
   const ref=doc(db,'users',uid);
-  unsubSnap=onSnapshot(ref,snap=>{ if(snap.exists()) applyData(snap.data()); });
+  unsubSnap=onSnapshot(ref,snap=>{ 
+    if(snap.exists()) {
+      userCloudData = snap.data();
+      if(currentAnime) applyData(userCloudData);
+    }
+  });
 }
 
 document.getElementById('btn-login').addEventListener('click',()=>{
@@ -400,13 +518,15 @@ onAuthStateChanged(auth, user=>{
     subscribeCloud(user.uid);
   } else {
     if(unsubSnap){unsubSnap();unsubSnap=null;}
+    userCloudData = null;
     loginBtn.style.display=''; logoutBtn.style.display='none';
     avatar.style.display='none'; name.style.display='none';
     hint.style.display=''; syncEl.style.display='none';
-    loadLocal(); render(); stats();
+    if(currentAnime){ loadLocal(); render(); stats(); }
   }
 });
 
+// --- TOOLTIP LOGIC ---
 const tt=document.getElementById('tt');
 let ttHide=null;
 
@@ -436,6 +556,7 @@ function posTT(ev){
 }
 document.addEventListener('mousemove',ev=>{ if(tt.style.display==='block') posTT(ev); });
 
+// --- MODAL LOGIC ---
 let modalEp=null, modalSaga=null;
 const overlay=document.getElementById('modal-overlay');
 const modalClose=document.getElementById('modal-close');
@@ -468,7 +589,6 @@ function renderModalStars(ep){
   }
 }
 
-// Funzione Aggiornata per aprire il Popup gestendo sia Film che Episodi
 function openModal(n, saga, movieObj = null){
   modalEp = movieObj ? movieObj.id : n; 
   modalSaga = saga;
@@ -477,30 +597,33 @@ function openModal(n, saga, movieObj = null){
     document.getElementById('modal-num').textContent = 'Film Speciale';
     document.getElementById('modal-title').textContent = movieObj.title;
     const badge = document.getElementById('modal-badge');
-    badge.textContent = '🎬 Film'; 
-    badge.className = 'modal-badge canon'; 
+    badge.textContent = '🎬 Film'; badge.className = 'modal-badge canon'; 
     renderModalStars(movieObj.id);
     
-    // Generazione Link Ufficiale Film OPPower
-    const movieUrl = 'https://onepiecepower.com/anime18/onepiece/movie/pagine/' + movieObj.num;
+    const movieUrl = ANIME_DB[currentAnime].movieUrl + movieObj.num;
     modalWatchIta.href = movieUrl;
     modalWatchIta.textContent = '▶ GUARDA FILM';
-    modalWatchSub.style.display = 'none'; // Nascondiamo il SUB perché la pagina contiene entrambi
-    
+    modalWatchSub.style.display = 'none'; 
     modalCopy.onclick = () => copyUrlCustom(movieUrl, modalCopy);
   } else {
     const t = epType(n);
     document.getElementById('modal-num').textContent = 'Episodio ' + n;
     const defaultTitle = 'Ep. ' + String(n).padStart(3, '0');
-    document.getElementById('modal-title').textContent = EP_TITLES[n] || defaultTitle;
+    document.getElementById('modal-title').textContent = ANIME_DB[currentAnime].titles[n] || defaultTitle;
     const badge = document.getElementById('modal-badge');
     badge.textContent = typeLabel(t); badge.className = 'modal-badge ' + t;
     renderModalStars(n);
     
     modalWatchIta.href = epUrl(n);
-    modalWatchIta.textContent = '▶ ITA';
     modalWatchSub.href = epUrlSub(n);
-    modalWatchSub.style.display = '';
+    
+    if (currentAnime === 'hxh') {
+      modalWatchSub.style.display = 'none';
+      modalWatchIta.textContent = '▶ GUARDA';
+    } else {
+      modalWatchSub.style.display = '';
+      modalWatchIta.textContent = '▶ ITA';
+    }
     
     modalCopy.onclick = () => copyUrlCustom(epUrl(n), modalCopy);
   }
@@ -522,7 +645,6 @@ modalClose.addEventListener('click',closeModal);
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 
-// Funzione Globale di "Mark"
 function markEp(n, saga, isMovie=false){
   watched.add(n); save();
   const selector = isMovie ? `.ep-movie[data-id="${n}"]` : `.ep[data-ep="${n}"]`;
@@ -546,7 +668,6 @@ prevBanner.style.cssText='display:none;margin-top:10px;padding:10px 12px;backgro
 prevBanner.innerHTML=`<div style="color:var(--text-muted);margin-bottom:8px;">Ci sono episodi precedenti non segnati. Vuoi marcarli tutti come visti?</div><div style="display:flex;gap:8px;"><button id="prev-yes" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;">Sì, segna tutti</button><button id="prev-no" style="flex:1;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:13px;">No, solo questo</button></div>`;
 document.getElementById('modal').appendChild(prevBanner);
 
-// Aggiornata la logica del bottone ✓ Guardato per supportare i film
 modalToggle.addEventListener('click', () => {
   if(modalEp === null) return;
   const isMovie = typeof modalEp === 'string';
@@ -582,9 +703,11 @@ modalToggle.addEventListener('click', () => {
 });
 
 function updateNext(){
+  if(!currentAnime) return;
+  const tTot = getTotal();
   document.querySelector('.ep.next-highlight')?.classList.remove('next-highlight');
   let next=null;
-  for(let n=1;n<=TOTAL;n++){if(!watched.has(n)){next=n;break;}}
+  for(let n=1;n<=tTot;n++){if(!watched.has(n)){next=n;break;}}
   
   const infoEl=document.getElementById('next-info');
   const linkIta=document.getElementById('link-next-ita');
@@ -593,34 +716,19 @@ function updateNext(){
   
   if(!next){
     linkIta.style.display='none'; linkSub.style.display='none'; gotoEl.style.display='none'; 
-    function getNextEpisodeStr() {
-      const now = new Date();
-      let nextSun = new Date(now);
-      nextSun.setHours(4, 0, 0, 0);
-      nextSun.setDate(now.getDate() + ((7 - now.getDay()) % 7));
-      if (now > nextSun) nextSun.setDate(nextSun.getDate() + 7);
-      
-      const diff = nextSun - now;
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const m = Math.floor((diff / 1000 / 60) % 60);
-      return `${d}g ${h}h ${m}m`;
-    }
-
-    infoEl.innerHTML=`<span style="color:var(--accent)">Sei in pari! 🎉 Prossimo ep: <strong id="ep-countdown">...</strong></span>`;
-    if(window.epTimer) clearInterval(window.epTimer);
-    const updateCd = () => {
-      const el = document.getElementById('ep-countdown');
-      if(el) el.textContent = getNextEpisodeStr();
-    };
-    updateCd(); 
-    window.epTimer = setInterval(updateCd, 60000); 
+    infoEl.innerHTML=`<span style="color:var(--accent)">Sei in pari con ${ANIME_DB[currentAnime].title}! 🎉</span>`;
     return;
   }
 
-  if(window.epTimer) { clearInterval(window.epTimer); window.epTimer = null; }
-
-  linkIta.style.display=''; linkSub.style.display=''; gotoEl.style.display='';
+  linkIta.style.display=''; gotoEl.style.display='';
+  if (currentAnime === 'hxh') {
+    linkSub.style.display='none';
+    linkIta.textContent='▶ GUARDA';
+  } else {
+    linkSub.style.display='';
+    linkIta.textContent='▶ ITA';
+  }
+  
   linkIta.href=epUrl(next); linkSub.href=epUrlSub(next);
   gotoEl.dataset.ep=next;
   const t=epType(next);
@@ -641,6 +749,8 @@ document.getElementById('btn-next').addEventListener('click',()=>{
 });
 
 function stats(){
+  if(!currentAnime) return;
+  const tTot = getTotal();
   let fw=0, cw=0, epCount=0, movieMins=0;
   for(const ep of watched){
     if(typeof ep === 'string' && ep.startsWith('m')){ movieMins += 100; continue; }
@@ -650,8 +760,8 @@ function stats(){
   document.getElementById('st-watched').textContent = epCount;
   document.getElementById('st-canon').textContent = cw;
   document.getElementById('st-filler').textContent = fw;
-  document.getElementById('st-total').textContent = TOTAL;
-  document.getElementById('progress').style.width = Math.round(epCount/TOTAL*100) + '%';
+  document.getElementById('st-total').textContent = tTot;
+  document.getElementById('progress').style.width = Math.round(epCount/tTot*100) + '%';
   
   const totalMins = (epCount * 20) + movieMins; 
   const days = Math.floor(totalMins / 1440);
@@ -673,8 +783,10 @@ function visible(n,type){
 }
 
 function render(){
+  if(!currentAnime) return;
+  const dbAnime = ANIME_DB[currentAnime];
   const c=document.getElementById('container'); c.innerHTML='';
-  for(const saga of SAGAS){
+  for(const saga of dbAnime.sagas){
     const total=saga.e-saga.s+1;
     const seen=[...Array(total)].filter((_,i)=>watched.has(saga.s+i)).length;
     
@@ -694,9 +806,8 @@ function render(){
       cell.addEventListener('mouseleave',hideTT);
       grid.appendChild(cell);
 
-      // --- LOGICA FILM (Ora apre il Popup) ---
-      if (MOVIES[n]) {
-        const movie = MOVIES[n];
+      if (dbAnime.movies && dbAnime.movies[n]) {
+        const movie = dbAnime.movies[n];
         const mCell = document.createElement('div');
         mCell.className = `ep-movie ${watched.has(movie.id) ? 'watched' : ''}`;
         mCell.textContent = movie.title;
@@ -752,14 +863,15 @@ document.getElementById('ep-search').addEventListener('keydown',ev=>{
 });
 
 document.getElementById('btn-skip-filler').addEventListener('click',()=>{
-  for(const[s,e]of FILLER) for(let i=s;i<=e;i++) watched.add(i);
+  if(!currentAnime) return;
+  const dbAnime = ANIME_DB[currentAnime];
+  for(const[s,e]of dbAnime.filler) for(let i=s;i<=e;i++) watched.add(i);
   save(); render(); stats();
 });
 document.getElementById('btn-reset').addEventListener('click',()=>{
-  if(confirm('Resettare tutti i progressi e i voti?')){ watched.clear(); ratings={}; save(); render(); stats(); }
+  if(confirm('Resettare tutti i progressi e i voti di questo anime?')){ watched.clear(); ratings={}; save(); render(); stats(); }
 });
 
-loadLocal(); render(); stats();
 </script>
 </body>
 </html>
