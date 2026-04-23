@@ -52,11 +52,13 @@
 
   /* HOME CARDS */
   .anime-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 1rem; }
-  .anime-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 1.5rem; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+  .anime-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
   .anime-card:hover { transform: translateY(-4px); border-color: var(--accent); }
   .anime-card h3 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
   .anime-card p { font-size: 13px; color: var(--text-muted); }
-  .card-icon { font-size: 48px; margin-bottom: 12px; display: inline-block; }
+  
+  /* Immagine della locandina in formato verticale */
+  .card-image { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; margin-bottom: 12px; background: var(--border); }
 
   /* TRACKER ELEMENTS */
   .next-ep-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; flex-wrap: wrap; transition: background 0.3s; }
@@ -315,7 +317,8 @@ const db   = getFirestore(app);
 // --- ANIME DATABASE ---
 const ANIME_DB = {
   onepiece: {
-    id: 'onepiece', title: "One Piece", sub: "episode tracker", icon: "☠️",
+    id: 'onepiece', title: "One Piece", sub: "episode tracker", 
+    image: "img/onepiece_cover.jpg",
     baseIta: 'https://onepiecepower.com/anime18/onepiece/ita3/pagine/',
     baseSub: 'https://onepiecepower.com/anime18/onepiece/subita2/pagine/',
     filler: [[54,60],[98,99],[102,102],[131,143],[196,206],[220,225],[279,283],[291,292],[303,303],[317,319],[326,336],[382,384],[406,407],[426,429],[457,458],[492,492],[542,542],[575,578],[590,590],[626,627],[747,750],[780,782],[895,896],[907,907],[1029,1030]],
@@ -351,7 +354,8 @@ const ANIME_DB = {
     }
   },
   hxh: {
-    id: 'hxh', title: "Hunter x Hunter", sub: "2011 tracker", icon: "🎣",
+    id: 'hxh', title: "Hunter x Hunter", sub: "2011 tracker", 
+    image: "img/hunter_cover.jpg",
     baseIta: 'https://onepiecepower.com/anime18/hunter-x-hunter-2-edizione-c/episodi/pagine/',
     baseSub: 'https://onepiecepower.com/anime18/hunter-x-hunter-2-edizione-c/episodi/pagine/', 
     filler: [[13,13], [26,26]],
@@ -394,7 +398,7 @@ Object.values(ANIME_DB).forEach(anime => {
   const card = document.createElement('div');
   card.className = 'anime-card';
   card.innerHTML = `
-    <span class="card-icon">${anime.icon}</span>
+    <img class="card-image" src="${anime.image}" alt="Locandina di ${anime.title}">
     <h3>${anime.title}</h3>
     <p>${anime.sagas[anime.sagas.length-1].e} Episodi</p>
   `;
