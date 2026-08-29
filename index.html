@@ -1303,7 +1303,25 @@ const ANIME_DB = {
       {name:'Stagione 6',s:261,e:293}
     ],
     movies: { 50: {id:'m01', title:'Boruto: Naruto the Movie', num:'01'} },
-    titles: { 1:'Boruto Uzumaki!', 2:"Il figlio dell'Hokage!", 3:'Metal Lee si scatena!' }
+    titles: { 1:'Boruto Uzumaki!', 2:"Il figlio dell'Hokage!", 3:'Metal Lee si scatena!' }  },
+
+  rossana: {
+    id: 'rossana', title: 'Rossana', sub: 'tracker',
+    image: 'img/rossana_cover.jpg',
+    accent: 'oklch(0.68 0.16 350)',       // rosa
+    malId: 0,                             // da compilare se vuoi i titoli automatici
+    runtime: 24,
+    total: 102,
+    hasSub: false,
+    // il numero sta in fondo all'indirizzo: ?id=rossana_1x01 -> ...1x{due cifre}
+    itaTpl: { tpl: 'https://loonex.eu/guarda/?id=rossana_1x{n}', pad: 2 },
+    baseIta: '', baseSub: '', movieUrl: '',
+    filler: [],
+    mixed: [],
+    sagas: [
+      {name:'Serie completa',s:1,e:102}
+    ],
+    movies: {}, titles: {}
   }
 };
 
@@ -1832,7 +1850,8 @@ function openTracker(id) {
     heroImg.src = a.image;
     const nSagas = sagasOf(a).length, nMovies = Object.keys(a.movies || {}).length;
     el('hero-kicker').textContent =
-      `${nSagas} saghe · ${totalOf(a)} episodi` + (nMovies ? ` · ${nMovies} film` : '');
+      `${nSagas} ${nSagas === 1 ? 'saga' : 'saghe'} · ${totalOf(a)} episodi` +
+      (nMovies ? ` · ${nMovies} film` : '');
     el('btn-back').classList.remove('hidden');
     el('view-home').classList.add('hidden');
     el('view-tracker').classList.remove('hidden');
