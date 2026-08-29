@@ -509,6 +509,25 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
   border: 1px solid oklch(1 0 0 / .22);
   color: oklch(0.99 0 0);
 }
+/* il bottoncino per togliere una serie dalla libreria */
+.card-nascondi {
+  position: absolute; left: 10px; top: 10px; z-index: 3;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: oklch(0.12 0.02 265 / .5);
+  border: 1px solid oklch(1 0 0 / .2);
+  color: oklch(0.99 0 0);
+  opacity: 0; transform: scale(.85);
+  transition: opacity .18s var(--ease), transform .18s var(--spring), background .18s var(--ease);
+}
+.card-nascondi svg { width: 15px; height: 15px; }
+.card:hover .card-nascondi,
+.card:focus-within .card-nascondi { opacity: 1; transform: scale(1); }
+.card-nascondi:hover { background: oklch(0.12 0.02 265 / .8); }
+@media (hover: none) {                    /* su touch non c'è il passaggio del dito */
+  .card-nascondi { opacity: .75; transform: scale(1); }
+}
+
 .card-bar {
   height: 4px; border-radius: 999px; background: oklch(1 0 0 / .25);
   overflow: hidden; margin-top: 10px;
@@ -1008,6 +1027,7 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
 
     <div class="cards" id="cards"></div>
     <p class="empty hidden" id="home-empty">Nessun anime trovato.</p>
+    <button class="btn hidden" id="home-mostra-tutti" style="margin-top:14px">Mostra le serie nascoste</button>
   </main>
 
   <!-- ================= TRACKER ================= -->
@@ -1188,6 +1208,18 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
       <button class="btn" id="btn-skip-filler">Salta tutti i filler</button>
       <button class="btn danger" id="btn-reset">Azzera progressi</button>
     </div>
+    <button class="btn block ghost hidden" id="btn-nascondi" style="margin-top:8px">
+      Nascondi dalla libreria
+    </button>
+
+    <div id="set-nascosti" class="hidden">
+      <div class="sheet-sec">Serie nascoste</div>
+      <p class="note">
+        <span id="nascosti-elenco"></span><br>
+        I progressi non sono stati cancellati: tornano appena le rimetti in libreria.
+      </p>
+      <button class="btn block" id="btn-mostra-tutti" style="margin-top:8px">Rimetti tutto in libreria</button>
+    </div>
 
     <p class="note" style="margin-top:14px">
       Versione dati <b id="ver">v3</b> · <span id="storage-size">—</span> usati su questo dispositivo.
@@ -1347,7 +1379,8 @@ const K = {
   titles: id => NS + 'titles:' + id,
   theme:  NS + 'theme',
   opts:   NS + 'opts',
-  extra:  NS + 'extra'      // episodi scoperti dopo l'uscita, per anime
+  extra:  NS + 'extra',     // episodi scoperti dopo l'uscita, per anime
+  nascosti: NS + 'nascosti' // serie tolte dalla libreria (i dati restano)
 };
 const now = () => Date.now();
 const isEp = k => /^\d+$/.test(k);
@@ -1627,6 +1660,43 @@ let serieAttuale = null;      // la serie mostrata in evidenza sulla home
    sotto questa soglia il timestamp non racconta quando hai visto davvero. */
 const T_VALIDO = 1600000000000;
 
+/* Serie nascoste dalla libreria. È solo una tendina: i progressi restano
+   salvati esattamente dove sono, e riappaiono intatti quando la rialzi. */
+const _nasc = lsGet(K.nascosti, null) || { lista: [], t: 0 };
+const NASCOSTI = new Set(Array.isArray(_nasc.lista) ? _nasc.lista : []);
+let nascostiT = +_nasc.t || 0;
+
+const visibile = id => !NASCOSTI.has(id);
+const idsVisibili = () => Object.keys(ANIME_DB).filter(visibile);
+
+function salvaNascosti() {
+  nascostiT = now();
+  lsSet(K.nascosti, { lista: [...NASCOSTI], t: nascostiT });
+  Cloud.queue('__nascosti');
+}
+
+function nascondi(id) {
+  if (!ANIME_DB[id]) return;
+  const nome = ANIME_DB[id].title;
+  NASCOSTI.add(id);
+  salvaNascosti();
+  if (currentId === id) goHome(); else renderHome();
+  toast(`"${nome}" nascosto — i progressi restano salvati`, {
+    action: 'Annulla', ms: 7000,
+    onAction: () => { NASCOSTI.delete(id); salvaNascosti(); renderHome(); }
+  });
+}
+
+function mostraTutti() {
+  const quanti = NASCOSTI.size;
+  if (!quanti) return;
+  NASCOSTI.clear();
+  salvaNascosti();
+  renderHome();
+  refreshSettings();
+  toast(quanti === 1 ? 'Serie rimessa in libreria' : `${quanti} serie rimesse in libreria`);
+}
+
 /** L'ultima volta che hai segnato qualcosa in questa serie. */
 function ultimaAttivita(id) {
   const st = STATES[id]; let m = 0;
@@ -1641,7 +1711,8 @@ function ultimaAttivita(id) {
 /** Quale serie sta in cima: quella toccata più di recente fra quelle non finite.
  *  Se nessuna ha una data (dati vecchi migrati) prendo quella più avanti. */
 function serieCorrente() {
-  const ids = Object.keys(ANIME_DB);
+  const ids = idsVisibili();
+  if (!ids.length) return null;
   const aperte = ids.filter(id => progressOf(id).next !== null);
   const candidate = aperte.length ? aperte : ids;
 
@@ -1730,6 +1801,7 @@ function renderRiprendi() {
 
 const apriSerieAttuale = () => { if (serieAttuale) openTracker(serieAttuale); };
 el('rip-griglia').addEventListener('click', apriSerieAttuale);
+el('home-mostra-tutti').addEventListener('click', mostraTutti);
 el('riprendi').querySelector('.rip-poster').addEventListener('click', apriSerieAttuale);
 
 el('rip-visto').addEventListener('click', () => {
@@ -1762,6 +1834,9 @@ function buildCards() {
         <img alt="" loading="lazy" decoding="async" width="400" height="600">
         <div class="card-shade" aria-hidden="true"></div>
         <span class="card-badge hidden"></span>
+        <button class="card-nascondi" title="Nascondi dalla libreria" aria-label="Nascondi ${a.title}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M10.6 10.7a2 2 0 002.8 2.8"/><path d="M9.4 5.2A9.5 9.5 0 0112 5c5 0 9 4.5 9 7 0 .9-.6 2.1-1.6 3.3M6.2 6.7C3.9 8.2 3 10.2 3 12c0 2.5 4 7 9 7 1.3 0 2.5-.3 3.6-.8"/></svg>
+        </button>
         <div class="card-over">
           <h3>${a.title}</h3>
           <div class="card-meta"></div>
@@ -1772,6 +1847,10 @@ function buildCards() {
     img.addEventListener('load', () => img.classList.add('ready'), { once: true });
     img.addEventListener('error', () => img.remove(), { once: true });
     if (a.image) img.src = a.image;
+    card.querySelector('.card-nascondi').addEventListener('click', ev => {
+      ev.stopPropagation();                 // non deve aprire la serie
+      nascondi(a.id);
+    });
     card.addEventListener('click', () => openTracker(a.id));
     box.appendChild(card);
   }
@@ -1790,7 +1869,7 @@ function renderHome() {
     const a = ANIME_DB[card.dataset.id];
     const p = progressOf(a.id);
     const nuovi = nuoviDi(a.id);
-    totali += p.seen;
+    if (visibile(a.id)) totali += p.seen;
 
     card.querySelector('.card-meta').textContent =
       `${p.seen} / ${p.tot} episodi` + (p.next ? ` · prossimo ${p.next}` : '');
@@ -1804,13 +1883,21 @@ function renderHome() {
     badge.classList.toggle('hidden', !testo);
     badge.classList.toggle('nuovo', !!nuovi);
 
-    const visibile = (!q || card.dataset.title.includes(q)) && a.id !== serieAttuale;
-    card.classList.toggle('hidden', !visibile);
-    if (visibile) mostrate++;
+    const inLibreria = visibile(a.id) && a.id !== serieAttuale;
+    const mostraCard = inLibreria && (!q || card.dataset.title.includes(q));
+    card.classList.toggle('hidden', !mostraCard);
+    if (mostraCard) mostrate++;
   }
 
   el('home-intestazione').classList.toggle('hidden', mostrate === 0 && !!serieAttuale);
-  el('home-empty').classList.toggle('hidden', mostrate > 0 || !!serieAttuale);
+  const vuoto = mostrate === 0 && !serieAttuale;
+  el('home-empty').classList.toggle('hidden', !vuoto);
+  el('home-empty').innerHTML = NASCOSTI.size
+    ? 'Hai nascosto tutte le serie.'
+    : 'Nessun anime trovato.';
+  el('home-mostra-tutti').classList.toggle('hidden', NASCOSTI.size === 0);
+  el('home-mostra-tutti').textContent =
+    NASCOSTI.size === 1 ? 'Mostra 1 serie nascosta' : `Mostra ${NASCOSTI.size} serie nascoste`;
   el('home-summary').textContent = totali
     ? `${totali} episodi visti in totale. Riprendi da dove avevi lasciato.`
     : 'Riprendi da dove avevi lasciato.';
@@ -2372,6 +2459,13 @@ function refreshSettings() {
     if (ex.at > ultimo) ultimo = ex.at;
     aggiunti += Math.max(0, (ex.total || 0) - baseTotal(ANIME_DB[id]));
   }
+  const nasc = el('set-nascosti');
+  nasc.classList.toggle('hidden', NASCOSTI.size === 0);
+  if (NASCOSTI.size) {
+    el('nascosti-elenco').textContent = [...NASCOSTI]
+      .map(id => (ANIME_DB[id] || {}).title || id).join(', ');
+  }
+  el('btn-nascondi').classList.toggle('hidden', !currentId);
   el('nuovi-stato').textContent = ultimo
     ? `Ultimo controllo: ${new Date(ultimo).toLocaleString('it-IT')}` +
       (aggiunti ? ` · ${aggiunti} episodi aggiunti finora` : '')
@@ -2402,6 +2496,13 @@ el('btn-check-nuovi').addEventListener('click', ev => {
     if (!trovati) toast('Nessun episodio nuovo: sei aggiornato');
   });
 });
+
+el('btn-nascondi').addEventListener('click', () => {
+  const id = currentId; if (!id) return;
+  hideDlg(dlgSet);
+  nascondi(id);
+});
+el('btn-mostra-tutti').addEventListener('click', () => { mostraTutti(); hideDlg(dlgSet); });
 
 el('btn-skip-filler').addEventListener('click', () => {
   const a = A();
@@ -2564,7 +2665,7 @@ async function controllaNuovi(a, { forza = false } = {}) {
 
 /** Giro completo, in coda alle altre chiamate a Jikan. */
 function controllaTuttiINuovi(opts) {
-  for (const id of Object.keys(ANIME_DB)) {
+  for (const id of idsVisibili()) {          // le nascoste non interrogano MyAnimeList
     const a = ANIME_DB[id];
     jikanChain = jikanChain
       .then(() => attesa(500))
@@ -2620,7 +2721,10 @@ const Cloud = {
     if (!this.user || !this.fb || !this.pending.size) return;
     const ids = [...this.pending]; this.pending.clear();
     const payload = { updatedAt: now() };
-    for (const id of ids) payload[id] = canon(STATES[id]);
+    for (const id of ids) {
+      if (id === '__nascosti') payload.nascosti = { lista: [...NASCOSTI], t: nascostiT };
+      else payload[id] = canon(STATES[id]);
+    }
     try {
       const { doc, setDoc } = this.fb.fs;
       await setDoc(doc(this.fb.db, 'users', this.user.uid), payload, { merge: true });
@@ -2641,6 +2745,18 @@ const Cloud = {
     if (snap.metadata && snap.metadata.hasPendingWrites) return;
     const data = snap.exists() ? snap.data() : {};
     let localChanged = false, remoteStale = false;
+
+    // lista delle serie nascoste: vince la più recente, è solo una preferenza
+    const nr = data.nascosti;
+    if (nr && Array.isArray(nr.lista) && +nr.t > nascostiT) {
+      NASCOSTI.clear();
+      for (const id of nr.lista) NASCOSTI.add(id);
+      nascostiT = +nr.t;
+      lsSet(K.nascosti, { lista: [...NASCOSTI], t: nascostiT });
+      localChanged = true;
+    } else if (nascostiT > (+(nr && nr.t) || 0)) {
+      this.pending.add('__nascosti'); remoteStale = true;
+    }
 
     for (const id of Object.keys(ANIME_DB)) {
       let remote = emptyState();
