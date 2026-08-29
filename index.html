@@ -284,6 +284,41 @@ a { color: inherit; }
   width: 15px; height: 15px; color: var(--text-hint); pointer-events: none;
 }
 
+/* barra "prossimo" che compare mentre scorri */
+.barra-basso {
+  position: fixed; z-index: 60;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  width: min(560px, calc(100vw - 20px));
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px 9px 14px;
+  border-radius: 999px;
+  background: var(--elev);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  animation: barraSu .32s var(--spring);
+}
+@keyframes barraSu { from { transform: translate(-50%, 120%); opacity: 0; } }
+.bb-info {
+  display: flex; flex-direction: column; align-items: flex-start;
+  flex: 1; min-width: 0; text-align: left; padding: 0 2px;
+  border-radius: var(--r-xs);
+}
+.bb-et {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: .12em;
+  color: var(--text-hint); font-weight: 640;
+}
+.bb-ep { font-size: 15px; font-weight: 620; letter-spacing: -.02em; }
+.bb-info:hover .bb-ep { color: var(--accent); }
+.barra-basso .tag { flex-shrink: 0; }
+.barra-basso .btn { flex-shrink: 0; height: 36px; }
+@media (max-width: 420px) {
+  .barra-basso { gap: 8px; padding-left: 12px; }
+  .barra-basso .tag { display: none; }   /* il colore della cella lo dice già */
+}
+/* i messaggi si spostano sopra la barra invece di coprirla */
+body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
+
 /* segmented control */
 .segmented {
   display: inline-flex; gap: 2px; padding: 3px;
@@ -302,6 +337,14 @@ a { color: inherit; }
 .segmented button[aria-pressed="true"] {
   background: var(--elev); color: var(--text);
   box-shadow: var(--shadow-sm);
+}
+/* gli interruttori si sommano al tipo, quindi si distinguono a colpo d'occhio */
+.segmented.toggles button[aria-pressed="true"] {
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: 0 1px 6px color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.segmented.toggles button[aria-pressed="true"]::before {
+  content: '✓'; margin-right: 5px; font-size: 11px;
 }
 
 /* ============================================================
@@ -906,13 +949,16 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
     </section>
 
     <div class="toolbar">
-      <div class="segmented" id="filters" role="group" aria-label="Filtra episodi">
-        <button data-f="all" aria-pressed="true">Tutti</button>
-        <button data-f="canon" aria-pressed="false">Canonici</button>
-        <button data-f="filler" aria-pressed="false">Filler</button>
-        <button data-f="todo" aria-pressed="false">Da vedere</button>
-        <button data-f="rated" aria-pressed="false">Votati</button>
+      <div class="segmented" id="f-tipo" role="group" aria-label="Tipo di episodio">
+        <button data-v="all" aria-pressed="true">Tutti</button>
+        <button data-v="canon" aria-pressed="false">Canonici</button>
+        <button data-v="filler" aria-pressed="false">Filler</button>
       </div>
+      <div class="segmented toggles" id="f-stato" role="group" aria-label="Stato">
+        <button data-v="todo" aria-pressed="false">Da vedere</button>
+        <button data-v="rated" aria-pressed="false">Votati</button>
+      </div>
+      <button class="btn sm ghost hidden" id="filtri-azzera">Azzera</button>
       <label class="search" style="max-width:180px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
         <input class="field" type="number" inputmode="numeric" min="1" id="ep-jump" placeholder="Vai all'ep. #" aria-label="Vai a un episodio">
@@ -1036,6 +1082,16 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
     </p>
   </div>
 </dialog>
+
+<!-- ================= BARRA "PROSSIMO" ================= -->
+<div class="barra-basso hidden" id="barra-basso">
+  <button class="bb-info" id="bb-vai">
+    <span class="bb-et">Prossimo</span>
+    <span class="bb-ep num" id="bb-ep">Episodio 1</span>
+  </button>
+  <span class="tag canon" id="bb-tag">Canonico</span>
+  <a class="btn sm primary" id="bb-guarda" href="#" target="_blank" rel="noopener noreferrer">Guarda</a>
+</div>
 
 <div id="toasts" aria-live="polite" aria-atomic="false"></div>
 <script type="module">
@@ -1307,7 +1363,9 @@ function setRating(id, k, v) {
 
 /* ============================ 3. STATO APP ================================ */
 let currentId = null;             // anime aperto
-let filter = 'all';
+let prossimoEp = null;        // episodio mostrato nella barra in basso
+let fTipo = 'all';            // all | canon | filler
+const fStato = new Set();     // 'todo', 'rated' — si sommano al tipo
 let typeMap = null;               // Uint8Array: 0 canon, 1 filler, 2 mixed
 let dlgEpKey = null, dlgEpNum = null;
 const OPTS = Object.assign({ autoTitles: true, autoNuovi: true }, lsGet(K.opts, {}));
@@ -1517,9 +1575,7 @@ function openTracker(id) {
     currentId = id;
     const a = A();
     typeMap = buildTypeMap(a);
-    filter = 'all';
-    document.querySelectorAll('#filters button').forEach(b =>
-      b.setAttribute('aria-pressed', String(b.dataset.f === 'all')));
+    azzeraFiltri({ ridisegna: false });
     document.documentElement.style.setProperty('--accent', a.accent);
     el('bar-title').textContent = a.title;
     el('bar-sub').textContent = a.sub;
@@ -1550,6 +1606,7 @@ function openTracker(id) {
     refreshAll();
     segnaNuoviComeVisti(id);
     window.scrollTo(0, 0);
+    posizionaSulPunto(prossimoEp);
   });
   history.replaceState(null, '', '#' + id);
 }
@@ -1562,6 +1619,8 @@ function goHome() {
     el('bar-sub').textContent = 'la tua libreria';
     el('btn-back').classList.add('hidden');
     el('bar-poster').classList.add('hidden');
+    el('barra-basso').classList.add('hidden');
+    document.body.classList.remove('con-barra');
     el('view-tracker').classList.add('hidden');
     el('view-home').classList.remove('hidden');
     el('set-anime-sec').classList.add('hidden');
@@ -1601,12 +1660,14 @@ function renderSagas() {
   sagasOf(a).forEach((saga, idx) => {
     const end = Math.min(saga.e, tot);
     const cells = [];
+    let unita = 0;
     for (let n = saga.s; n <= end; n++) {
       cells.push(cellHtml(a, n, st, nuoviDa));
-      if (a.movies && a.movies[n]) cells.push(movieHtml(a, a.movies[n], st));
+      unita++;
+      if (a.movies && a.movies[n]) { cells.push(movieHtml(a, a.movies[n], st)); unita += 2; }
     }
     out.push(`
-      <section class="saga" data-s="${saga.s}" data-e="${end}">
+      <section class="saga" data-s="${saga.s}" data-e="${end}" data-unita="${unita}">
         <div class="saga-head" data-i="${idx}">
           <div class="saga-band" aria-hidden="true"></div>
           <div class="saga-veil" aria-hidden="true"></div>
@@ -1623,6 +1684,42 @@ function renderSagas() {
   el('sagas').innerHTML = out.join('');
   // una sola cella per griglia entra nel giro del Tab: le altre con le frecce
   el('sagas').querySelectorAll('.grid').forEach(g => { if (g.firstElementChild) g.firstElementChild.tabIndex = 0; });
+  stimaAltezze();
+}
+
+/** Altezza stimata di ogni saga.
+ *  Le saghe fuori schermo non vengono disegnate (content-visibility), quindi il
+ *  browser deve indovinarne l'altezza: se sbaglia, la barra di scorrimento
+ *  salta mentre scendi e "vai all'episodio" atterra nel posto sbagliato.
+ *  Qui gliela calcoliamo dal numero di celle e dalla larghezza disponibile. */
+function stimaAltezze() {
+  const box = el('sagas');
+  const w = box.clientWidth;
+  if (!w) return;
+  const gap = 5, minCella = 46;
+  const colonne = Math.max(1, Math.floor((w + gap) / (minCella + gap)));
+  const lato = (w - (colonne - 1) * gap) / colonne;
+  for (const sec of box.children) {
+    const unita = +sec.dataset.unita || 0;
+    const righe = Math.ceil(unita / colonne);
+    sec.style.containIntrinsicSize =
+      'auto ' + Math.round(68 + righe * (lato + gap) + 18) + 'px';
+  }
+}
+let ridimensiona = null;
+addEventListener('resize', () => {
+  clearTimeout(ridimensiona);
+  ridimensiona = setTimeout(() => { if (currentId) stimaAltezze(); }, 200);
+});
+
+/** Apre il tracker già alla saga in cui sei: con 1155 episodi partire
+ *  dall'inizio significa scorrere ogni volta per arrivare al punto. */
+function posizionaSulPunto(n) {
+  if (!n) return;
+  const sec = [...el('sagas').children].find(s => n >= +s.dataset.s && n <= +s.dataset.e);
+  if (!sec || sec === el('sagas').firstElementChild) return;   // già in cima
+  const y = sec.getBoundingClientRect().top + window.scrollY - 92;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'instant' });
 }
 
 /* Un solo listener per tutta la griglia (prima erano 3 per cella). */
@@ -1674,7 +1771,14 @@ function bulkSaga(s) {
   backup(currentId, 'segna-saga');
   const before = canon(st);
   setWatched(currentId, keys, !allDone);
-  keys.forEach(paintCell);
+  // ridipingo scorrendo la sezione, invece di cercare ogni cella nel documento
+  const sez = el('sagas').querySelector(`.saga[data-s="${s}"]`);
+  if (sez) for (const c of sez.querySelectorAll('[data-k]')) {
+    const k = c.dataset.k;
+    c.classList.toggle('done', isWatched(st, k));
+    c.classList.toggle('rated', !!ratingOf(st, k));
+    applyFilterTo(c);
+  }
   refreshAll();
   toast(allDone ? `"${saga.name}" segnata come da vedere` : `"${saga.name}" segnata come vista`,
     { action: 'Annulla', onAction: () => restore(currentId, before) });
@@ -1706,40 +1810,61 @@ function repaintAll() {
   });
 }
 
-/* ============================ 9. FILTRI =================================== */
+/* ============================ 9. FILTRI ===================================
+   Due gruppi indipendenti che si sommano: il tipo di episodio (uno alla volta)
+   e lo stato (quanti ne vuoi). Così "canonici che non ho ancora visto" — la
+   combinazione che serve davvero — diventa possibile.
+   ========================================================================== */
 function applyFilterTo(c) {
   const k = c.dataset.k, t = c.dataset.t, st = STATES[currentId];
-  let ok = true;
-  if (filter === 'canon') ok = t === 'canon';
-  else if (filter === 'filler') ok = t === 'filler' || t === 'mixed';
-  else if (filter === 'todo') ok = !isWatched(st, k);
-  else if (filter === 'rated') ok = !!ratingOf(st, k);
-  if (filter === 'canon' && t === 'movie') ok = false;
-  if (filter === 'filler' && t === 'movie') ok = false;
+  let ok;
+  if (fTipo === 'canon') ok = t === 'canon';
+  else if (fTipo === 'filler') ok = t === 'filler' || t === 'mixed';
+  else ok = true;
+  if (fTipo !== 'all' && t === 'movie') ok = false;      // i film non sono né canon né filler
+  if (ok && fStato.has('todo')) ok = !isWatched(st, k);
+  if (ok && fStato.has('rated')) ok = !!ratingOf(st, k);
   c.classList.toggle('hidden', !ok);
 }
+
 function applyFilter() {
   el('sagas').querySelectorAll('[data-k]').forEach(applyFilterTo);
   el('sagas').querySelectorAll('.saga').forEach(s => {
-    const any = [...s.querySelectorAll('[data-k]')].some(c => !c.classList.contains('hidden'));
+    const any = s.querySelector('[data-k]:not(.hidden)');
     s.classList.toggle('hidden', !any);
   });
+  const attivi = (fTipo !== 'all' ? 1 : 0) + fStato.size;
+  el('filtri-azzera').classList.toggle('hidden', attivi === 0);
 }
-el('filters').addEventListener('click', ev => {
-  const b = ev.target.closest('button[data-f]'); if (!b) return;
-  filter = b.dataset.f;
-  document.querySelectorAll('#filters button').forEach(x =>
-    x.setAttribute('aria-pressed', String(x === b)));
-  applyFilter();
+
+function pittaFiltri() {
+  document.querySelectorAll('#f-tipo button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.v === fTipo)));
+  document.querySelectorAll('#f-stato button').forEach(b =>
+    b.setAttribute('aria-pressed', String(fStato.has(b.dataset.v))));
+}
+
+function azzeraFiltri({ ridisegna = true } = {}) {
+  fTipo = 'all'; fStato.clear();
+  pittaFiltri();
+  if (ridisegna) applyFilter();
+}
+
+el('f-tipo').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-v]'); if (!b) return;
+  fTipo = b.dataset.v;
+  pittaFiltri(); applyFilter();
 });
+el('f-stato').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-v]'); if (!b) return;
+  const v = b.dataset.v;
+  fStato.has(v) ? fStato.delete(v) : fStato.add(v);      // si accendono e spengono
+  pittaFiltri(); applyFilter();
+});
+el('filtri-azzera').addEventListener('click', () => azzeraFiltri());
 
 function jumpTo(n, { clearFilter = true } = {}) {
-  if (clearFilter && filter !== 'all') {
-    filter = 'all';
-    document.querySelectorAll('#filters button').forEach(x =>
-      x.setAttribute('aria-pressed', String(x.dataset.f === 'all')));
-    applyFilter();
-  }
+  if (clearFilter && (fTipo !== 'all' || fStato.size)) azzeraFiltri();
   const c = cellOf(String(n));
   if (!c) { toast(`Episodio ${n} non trovato`); return; }
   c.closest('.saga').style.contentVisibility = 'visible';
@@ -1808,6 +1933,7 @@ function refreshAll() {
   const resume = el('resume');
 
   if (next === null) {
+    prossimoEp = null;
     el('resume-ep').textContent = `Sei in pari con ${a.title}!`;
     el('resume-tag').classList.add('hidden');
     el('resume-title').textContent = `${seen} episodi su ${tot}. 🎉`;
@@ -1830,6 +1956,15 @@ function refreshAll() {
     el('btn-goto').dataset.n = next;
     cellOf(String(next))?.classList.add('next');
 
+    // barra in basso, quella che ti segue mentre scorri
+    prossimoEp = next;
+    el('bb-ep').textContent = 'Episodio ' + next;
+    const bbTag = el('bb-tag');
+    bbTag.className = 'tag ' + typeName(t);
+    bbTag.textContent = typeLabel(t);
+    el('bb-guarda').href = epUrl(a, next, false);
+    el('bb-guarda').textContent = a.hasSub ? 'Guarda ITA' : 'Guarda';
+
     // se il prossimo è filler, offro la scorciatoia al prossimo canonico
     const skip = el('btn-skip-to-canon');
     const canonNext = (skip && t === 1) ? nextEpisode(true) : null;
@@ -1840,6 +1975,7 @@ function refreshAll() {
     } else if (skip) skip.classList.add('hidden');
   }
   renderHome();
+  aggiornaBarraBasso();
   if (OPTS.autoTitles && next) ensureTitles(next);
 }
 
@@ -1901,6 +2037,7 @@ function openEp(key) {
   renderStars();
   paintToggle();
   showDlg(dlgEp);
+  aggiornaBarraBasso();
 }
 
 function paintToggle() {
@@ -2351,6 +2488,21 @@ el('btn-logout').addEventListener('click', async () => {
 });
 addEventListener('online', () => { if (Cloud.pending.size) Cloud.flush(); });
 
+/* ============================================================================
+   15-bis. BARRA "PROSSIMO" IN BASSO
+   Appena scorri, la testata con il bottone "Guarda" esce di scena: questa barra
+   la sostituisce, così non devi risalire per far partire l'episodio giusto.
+   ========================================================================== */
+function aggiornaBarraBasso() {
+  const bb = el('barra-basso');
+  const dialogoAperto = (dlgEp && dlgEp.open) || (dlgSet && dlgSet.open);
+  const mostra = !!currentId && !!prossimoEp && !dialogoAperto && scrollY > 300;
+  bb.classList.toggle('hidden', !mostra);
+  document.body.classList.toggle('con-barra', mostra);
+}
+el('bb-vai').addEventListener('click', () => { if (prossimoEp) jumpTo(prossimoEp); });
+for (const d of [dlgEp, dlgSet]) d.addEventListener('close', aggiornaBarraBasso);
+
 /* ============================ 15. SCORCIATOIE ============================= */
 addEventListener('keydown', ev => {
   if (ev.target.matches('input, textarea')) return;
@@ -2366,6 +2518,7 @@ addEventListener('scroll', () => {
   requestAnimationFrame(() => {
     barra.classList.toggle('scrolled', scrollY > 8);
     miniPoster.classList.toggle('hidden', !(currentId && miniPoster.src && scrollY > 150));
+    aggiornaBarraBasso();
     scrollInCorso = false;
   });
 }, { passive: true });
