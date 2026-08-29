@@ -348,6 +348,85 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
 }
 
 /* ============================================================
+   HOME — "riprendi": l'episodio da guardare adesso
+   ============================================================ */
+.riprendi {
+  position: relative; isolation: isolate;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 6px 0 34px;
+  box-shadow: var(--shadow-md);
+}
+.rip-bg {
+  position: absolute; inset: -60px; z-index: 0;
+  background-size: cover; background-position: center 22%;
+  filter: blur(30px) saturate(1.5); opacity: .8; transform: scale(1.1);
+}
+:root[data-theme="dark"] .rip-bg { opacity: .6; }
+.rip-velo {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(100deg, var(--bg) 0%,
+      color-mix(in oklab, var(--bg) 80%, transparent) 46%,
+      color-mix(in oklab, var(--bg) 30%, transparent) 100%),
+    linear-gradient(to top, var(--bg) 2%, transparent 70%);
+}
+.rip-inner {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: clamp(18px, 3vw, 30px);
+  padding: clamp(20px, 3.4vw, 34px);
+}
+.rip-poster {
+  position: relative; flex-shrink: 0;
+  width: clamp(104px, 16vw, 168px); aspect-ratio: 2/3;
+  border-radius: var(--r-md); overflow: hidden;
+  background: linear-gradient(150deg,
+    color-mix(in oklab, var(--accent) 32%, var(--surface-2)), var(--surface-2) 70%);
+  display: grid; place-items: center;
+  box-shadow: 0 3px 10px oklch(0 0 0/.16), 0 20px 44px oklch(0 0 0/.22);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+.rip-poster { cursor: pointer; transition: transform .3s var(--spring); }
+.rip-poster:hover { transform: translateY(-3px) scale(1.02); }
+.rip-poster img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity .45s var(--ease);
+}
+.rip-poster img.ready { opacity: 1; }
+.rip-iniziale {
+  font-family: var(--serif); font-style: italic; font-size: 52px;
+  color: color-mix(in oklab, var(--accent) 60%, var(--text)); opacity: .5;
+}
+.rip-info { flex: 1; min-width: 0; }
+.rip-serie {
+  font-size: 10.5px; font-weight: 640; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px;
+}
+.rip-ep {
+  font-size: clamp(28px, 5vw, 46px); font-weight: 660;
+  letter-spacing: -.04em; line-height: 1.02;
+}
+.rip-titolo {
+  font-family: var(--serif); font-style: italic;
+  font-size: clamp(15px, 1.9vw, 19px); color: var(--text-muted);
+  margin-top: 6px; line-height: 1.35;
+}
+.rip-meta { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.rip-avanz { font-size: 12.5px; color: var(--text-muted); }
+.rip-azioni { display: flex; gap: 8px; flex-wrap: wrap; }
+.rip-azioni .btn { height: 42px; padding: 0 20px; font-size: 14.5px; }
+.riprendi.pari .rip-ep { font-size: clamp(22px, 3.4vw, 32px); }
+
+@media (max-width: 620px) {
+  .rip-inner { flex-direction: column; align-items: stretch; gap: 16px; padding: 16px; }
+  .rip-poster { width: 92px; }
+  .rip-testa { display: flex; gap: 14px; align-items: center; }
+  .rip-azioni .btn { flex: 1; min-width: calc(50% - 4px); justify-content: center; }
+  .riprendi { margin-bottom: 26px; }
+}
+
+/* ============================================================
    HOME
    ============================================================ */
 .hero { padding: 6px 0 22px; }
@@ -362,8 +441,10 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
-  gap: clamp(14px, 2.2vw, 24px);
+  /* le altre serie sono di contorno: restano compatte invece di allargarsi,
+     e su telefono stanno in due colonne invece di una gigante */
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 45%), 1fr));
+  gap: clamp(12px, 1.8vw, 18px);
 }
 .card {
   position: relative; display: block;
@@ -394,7 +475,7 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
 .card-art img.ready { opacity: 1; }
 .card:hover .card-art img.ready { transform: scale(1.05); }
 .card-art .initials {
-  font-family: var(--serif); font-size: 68px; font-style: italic;
+  font-family: var(--serif); font-size: 54px; font-style: italic;
   color: color-mix(in oklab, var(--card-accent, var(--accent)) 65%, var(--text));
   opacity: .5;
 }
@@ -412,7 +493,7 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
   padding: 14px 14px 15px; color: oklch(0.98 0 0);
 }
 .card-over h3 {
-  font-size: 19px; font-weight: 640; letter-spacing: -.026em; line-height: 1.15;
+  font-size: 17px; font-weight: 640; letter-spacing: -.026em; line-height: 1.15;
   text-shadow: 0 1px 12px oklch(0 0 0 / .5);
 }
 .card-meta {
@@ -567,6 +648,7 @@ body.con-barra #toasts { bottom: calc(74px + env(safe-area-inset-bottom)); }
               border-color: color-mix(in oklab, var(--ok) 30%, transparent); }
 .tag.filler { background: var(--filler-bg); color: var(--filler-tx); border-color: var(--filler-br); }
 .tag.mixed  { background: var(--mixed-bg);  color: var(--mixed-tx);  border-color: var(--mixed-br); }
+.tag.nuovi  { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .tag.movie  { background: var(--movie-bg);  color: var(--movie-tx);  border-color: var(--movie-br); }
 
 /* ============================================================
@@ -882,8 +964,38 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
 
   <!-- ================= HOME ================= -->
   <main id="view-home">
-    <section class="hero">
-      <h2>La tua <em>libreria</em></h2>
+
+    <!-- il pezzo forte: l'episodio che devi guardare adesso -->
+    <section class="riprendi hidden" id="riprendi">
+      <div class="rip-bg" id="rip-bg" aria-hidden="true"></div>
+      <div class="rip-velo" aria-hidden="true"></div>
+      <div class="rip-inner">
+        <figure class="rip-poster">
+          <span class="rip-iniziale" id="rip-iniziale" aria-hidden="true"></span>
+          <img id="rip-img" alt="" decoding="async">
+        </figure>
+        <div class="rip-info">
+          <div class="rip-serie" id="rip-serie">—</div>
+          <h2 class="rip-ep" id="rip-ep">Episodio —</h2>
+          <div class="rip-titolo" id="rip-titolo"></div>
+          <div class="rip-meta">
+            <span class="tag canon" id="rip-tag">Canonico</span>
+            <span class="tag nuovi hidden" id="rip-nuovi"></span>
+            <span class="rip-avanz num" id="rip-avanz"></span>
+          </div>
+          <div class="bar-wrap" style="margin:12px 0 16px"><div class="bar-fill" id="rip-bar" style="width:0%"></div></div>
+          <div class="rip-azioni">
+            <a class="btn primary" id="rip-guarda" href="#" target="_blank" rel="noopener noreferrer">Guarda</a>
+            <a class="btn" id="rip-sub" href="#" target="_blank" rel="noopener noreferrer">SUB</a>
+            <button class="btn" id="rip-visto">Segna visto</button>
+            <button class="btn ghost" id="rip-griglia">Tutti gli episodi</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hero" id="home-intestazione">
+      <h2 id="home-titolo">Le altre <em>serie</em></h2>
       <p id="home-summary">Riprendi da dove avevi lasciato.</p>
     </section>
 
@@ -1491,6 +1603,128 @@ function progressOf(id) {
 }
 
 let cardsCostruite = false;
+let serieAttuale = null;      // la serie mostrata in evidenza sulla home
+
+/* Gli episodi importati dal vecchio formato hanno una data fittizia (1970):
+   sotto questa soglia il timestamp non racconta quando hai visto davvero. */
+const T_VALIDO = 1600000000000;
+
+/** L'ultima volta che hai segnato qualcosa in questa serie. */
+function ultimaAttivita(id) {
+  const st = STATES[id]; let m = 0;
+  if (!st) return 0;
+  for (const k in st.w) {
+    const t = st.w[k];
+    if (t > m && t > (st.u[k] || 0) && t > T_VALIDO) m = t;
+  }
+  return m;
+}
+
+/** Quale serie sta in cima: quella toccata più di recente fra quelle non finite.
+ *  Se nessuna ha una data (dati vecchi migrati) prendo quella più avanti. */
+function serieCorrente() {
+  const ids = Object.keys(ANIME_DB);
+  const aperte = ids.filter(id => progressOf(id).next !== null);
+  const candidate = aperte.length ? aperte : ids;
+
+  let scelta = null, quando = -1;
+  for (const id of candidate) {
+    const t = ultimaAttivita(id);
+    if (t > quando) { quando = t; scelta = id; }
+  }
+  if (quando <= 0) {                       // nessuna data utile
+    let piuAvanti = -1;
+    for (const id of candidate) {
+      const p = progressOf(id);
+      if (p.seen > piuAvanti) { piuAvanti = p.seen; scelta = id; }
+    }
+  }
+  return scelta || ids[0] || null;
+}
+
+function renderRiprendi() {
+  const box = el('riprendi');
+  const cercando = !!el('home-search').value.trim();
+  const id = cercando ? null : serieCorrente();
+  serieAttuale = id;
+
+  if (!id) { box.classList.add('hidden'); el('home-titolo').innerHTML = 'La tua <em>libreria</em>'; return; }
+
+  const a = ANIME_DB[id], p = progressOf(id);
+  box.classList.remove('hidden');
+  box.style.setProperty('--accent', a.accent);
+  box.classList.toggle('pari', p.next === null);
+  el('home-titolo').innerHTML = 'Le altre <em>serie</em>';
+
+  el('rip-serie').textContent = a.title;
+  el('rip-iniziale').textContent = a.title.slice(0, 1);
+  el('rip-avanz').textContent = `${p.seen} / ${p.tot} episodi · ${p.pct}%`;
+  const nuovi = nuoviDi(id);
+  const chip = el('rip-nuovi');
+  chip.classList.toggle('hidden', !nuovi);
+  if (nuovi) chip.textContent = `${nuovi} nuov${nuovi === 1 ? 'o' : 'i'}`;
+  el('rip-bar').style.width = p.pct + '%';
+
+  const img = el('rip-img');
+  if (img.dataset.per !== id) {                 // l'immagine si tocca solo se cambia serie
+    img.dataset.per = id;
+    img.classList.remove('ready');
+    el('rip-bg').style.backgroundImage = '';
+    img.onload = () => { img.classList.add('ready'); el('rip-bg').style.backgroundImage = `url("${a.image}")`; };
+    img.onerror = () => img.removeAttribute('src');
+    if (a.image) img.src = a.image; else img.removeAttribute('src');
+  }
+
+  if (p.next === null) {
+    el('rip-ep').textContent = 'Sei in pari 🎉';
+    el('rip-titolo').textContent = `Hai visto tutti i ${p.tot} episodi.`;
+    el('rip-tag').classList.add('hidden');
+    el('rip-guarda').classList.add('hidden');
+    el('rip-sub').classList.add('hidden');
+    el('rip-visto').classList.add('hidden');
+    return;
+  }
+
+  const mappa = buildTypeMap(a);                // il tipo dell'episodio anche fuori dal tracker
+  const t = mappa[p.next];
+  el('rip-ep').textContent = 'Episodio ' + p.next;
+  el('rip-titolo').textContent = titleFor(p.next, a) || '';
+  const tag = el('rip-tag');
+  tag.className = 'tag ' + typeName(t);
+  tag.textContent = typeLabel(t);
+  tag.classList.remove('hidden');
+
+  const g = el('rip-guarda');
+  g.classList.remove('hidden');
+  g.href = epUrl(a, p.next, false);
+  g.textContent = a.hasSub ? 'Guarda ITA' : 'Guarda';
+  const sub = el('rip-sub');
+  sub.classList.toggle('hidden', !a.hasSub);
+  if (a.hasSub) sub.href = epUrl(a, p.next, true);
+  el('rip-visto').classList.remove('hidden');
+
+  if (OPTS.autoTitles && !titleFor(p.next, a)) {
+    ensureTitles(p.next, a).then(() => {
+      if (serieAttuale === id) el('rip-titolo').textContent = titleFor(p.next, a) || '';
+    });
+  }
+}
+
+const apriSerieAttuale = () => { if (serieAttuale) openTracker(serieAttuale); };
+el('rip-griglia').addEventListener('click', apriSerieAttuale);
+el('riprendi').querySelector('.rip-poster').addEventListener('click', apriSerieAttuale);
+
+el('rip-visto').addEventListener('click', () => {
+  const id = serieAttuale; if (!id) return;
+  const p = progressOf(id);
+  if (p.next === null) return;
+  setWatched(id, [String(p.next)], true);
+  renderHome();
+  toast(`Episodio ${p.next} di ${ANIME_DB[id].title} segnato`, {
+    action: 'Annulla',
+    onAction: () => { setWatched(id, [String(p.next)], false); renderHome(); }
+  });
+});
 
 /* Le copertine sono file pesanti: ricreare gli <img> a ogni click costringeva il
    browser a ridecodificarle. Ora le schede si costruiscono una volta sola e poi
@@ -1529,6 +1763,7 @@ function buildCards() {
 function renderHome() {
   if (el('view-home').classList.contains('hidden')) return;   // niente lavoro a vuoto
   if (!cardsCostruite) buildCards();
+  renderRiprendi();
 
   const q = el('home-search').value.trim().toLowerCase();
   let mostrate = 0, totali = 0;
@@ -1551,12 +1786,13 @@ function renderHome() {
     badge.classList.toggle('hidden', !testo);
     badge.classList.toggle('nuovo', !!nuovi);
 
-    const visibile = !q || card.dataset.title.includes(q);
+    const visibile = (!q || card.dataset.title.includes(q)) && a.id !== serieAttuale;
     card.classList.toggle('hidden', !visibile);
     if (visibile) mostrate++;
   }
 
-  el('home-empty').classList.toggle('hidden', mostrate > 0);
+  el('home-intestazione').classList.toggle('hidden', mostrate === 0 && !!serieAttuale);
+  el('home-empty').classList.toggle('hidden', mostrate > 0 || !!serieAttuale);
   el('home-summary').textContent = totali
     ? `${totali} episodi visti in totale. Riprendi da dove avevi lasciato.`
     : 'Riprendi da dove avevi lasciato.';
@@ -1986,10 +2222,11 @@ const dlgEp = el('dlg-ep');
 function showDlg(d) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
 function hideDlg(d) { if (d.close) d.close(); else d.removeAttribute('open'); }
 
-function titleFor(n) {
-  const a = A();
+function titleFor(n, anime) {
+  const a = anime || A();
+  if (!a) return '';
   if (a.titles && a.titles[n]) return a.titles[n];
-  const cache = cacheTitoli(currentId);
+  const cache = cacheTitoli(a.id);
   return (cache && cache[n]) || '';
 }
 
@@ -2228,8 +2465,9 @@ function cacheTitoli(id) {
   return titleCache[id] || (titleCache[id] = lsGet(K.titles(id), {}));
 }
 
-function ensureTitles(n) {
-  const a = A();
+function ensureTitles(n, anime) {
+  const a = anime || A();
+  if (!a) return Promise.resolve();
   if (!OPTS.autoTitles || !a.malId || !navigator.onLine) return Promise.resolve();
   const page = Math.floor((n - 1) / 100) + 1;
   const tag = a.id + ':' + page;

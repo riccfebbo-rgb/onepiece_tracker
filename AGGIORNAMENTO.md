@@ -167,6 +167,30 @@ gruppi indipendenti — il tipo (uno alla volta) e lo stato (quanti ne vuoi) —
 *i canonici che non ho ancora visto* diventa una combinazione possibile. Gli
 interruttori attivi sono colorati e c'è un "Azzera" che compare solo quando serve.
 
+## Il baricentro (v3.5)
+
+La home non è più una vetrina di copertine: è **l'episodio che devi guardare
+adesso**. Apri il sito e trovi in grande la serie che stavi seguendo, il numero
+dell'episodio, il suo titolo, se è canonico o filler, e i bottoni per guardarlo o
+segnarlo. Le altre serie restano sotto, in formato ridotto.
+
+Quale serie va in cima: quella toccata più di recente fra quelle non finite. Se
+nessuna ha una data utile — succede con i progressi importati dal vecchio
+formato, che non hanno un "quando" — vince quella in cui sei più avanti.
+
+"Segna visto" funziona direttamente da lì e la schermata **avanza da sola** al
+successivo, con Annulla nel messaggio in basso. Se sono usciti episodi nuovi,
+compare la pastiglia accanto al tipo. "Tutti gli episodi" (o la locandina) apre
+la griglia come prima, già posizionata al punto giusto.
+
+### Perché non ha toccato i salvataggi
+
+È una modifica di sola presentazione: legge lo stesso stato di prima, con le
+stesse chiavi e lo stesso formato. Nessuna migrazione, nessun campo nuovo, niente
+da convertire. Il test lo verifica esplicitamente: dopo aver segnato un episodio
+dalla nuova home, il salvataggio ha ancora `v:3` con i suoi `w`, `u`, `r`, e le
+vecchie chiavi del formato v1 sono ancora al loro posto.
+
 ## Manutenzione
 
 Aggiungere un anime = aggiungere una voce a `ANIME_DB` in cima allo script; nessun
