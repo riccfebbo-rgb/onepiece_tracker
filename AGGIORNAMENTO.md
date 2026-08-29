@@ -141,6 +141,32 @@ il numero scritto nel file fa da pavimento (si può solo salire) e uno scarto
 superiore a 400 episodi viene scartato come errore dell'API. Se sei senza rete
 non succede niente. Si disattiva in Impostazioni, dove c'è anche "Controlla adesso".
 
+## Muoversi dentro la lista (v3.4)
+
+Tre modifiche che affrontano lo stesso problema: 1155 episodi sono tanti da
+attraversare.
+
+**Si apre già al punto in cui sei.** Prima entravi in One Piece e ti trovavi
+all'episodio 1, con ottocento celle da scorrere. Ora la pagina si posiziona da
+sola sulla saga in corso.
+
+Perché funzionasse ho dovuto sistemare una cosa sotto il cofano: le saghe fuori
+schermo non vengono disegnate (`content-visibility`), quindi il browser ne deve
+stimare l'altezza, e con una stima fissa di 260px per tutte sbagliava di molto —
+la barra di scorrimento saltava mentre scendevi e "vai all'episodio" atterrava
+storto. Ora l'altezza si calcola dal numero di celle e dalla larghezza
+disponibile: **scarto 0,0%** su tutte le saghe misurate.
+
+**La barra "prossimo" ti segue.** Appena scorri, la testata con "Guarda ITA" esce
+di scena; una barra sottile in basso mostra episodio, tipo e il bottone per farlo
+partire. Tocchi il numero e salti alla cella. Sparisce quando apri una scheda e
+quando torni in cima.
+
+**I filtri si sommano.** Erano esclusivi: o "Canonici" o "Da vedere". Ora sono due
+gruppi indipendenti — il tipo (uno alla volta) e lo stato (quanti ne vuoi) — così
+*i canonici che non ho ancora visto* diventa una combinazione possibile. Gli
+interruttori attivi sono colorati e c'è un "Azzera" che compare solo quando serve.
+
 ## Manutenzione
 
 Aggiungere un anime = aggiungere una voce a `ANIME_DB` in cima allo script; nessun
