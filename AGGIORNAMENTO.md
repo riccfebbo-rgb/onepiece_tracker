@@ -128,12 +128,42 @@ lettura, quindi la prima sincronizzazione lo recupera invece di cancellarlo.
 - **Più atmosfera**: tema scuro più profondo, alone del colore dell'anime dietro
   alla pagina, e una grana da pellicola quasi invisibile che toglie il "piatto".
 
+## Nuovi episodi in automatico (v3.2)
+
+All'avvio l'app chiede a MyAnimeList qual è l'ultimo episodio uscito (non più di
+due volte al giorno) e, se ne trova di nuovi, li aggiunge alla griglia da sola:
+avviso in basso, contatore "3 nuovi" sulla copertina in libreria, celle nuove
+evidenziate finché non apri l'anime. Non devi più aggiornare `total` a mano.
+
+Per una serie in corso il campo "episodi" di MyAnimeList resta vuoto, quindi il
+numero viene preso dall'ultimo episodio presente nell'elenco. Due paletti:
+il numero scritto nel file fa da pavimento (si può solo salire) e uno scarto
+superiore a 400 episodi viene scartato come errore dell'API. Se sei senza rete
+non succede niente. Si disattiva in Impostazioni, dove c'è anche "Controlla adesso".
+
 ## Manutenzione
 
 Aggiungere un anime = aggiungere una voce a `ANIME_DB` in cima allo script; nessun
-altro punto del codice dipende da un id specifico. Per One Piece che continua, il
-numero di episodi si aggiorna in **un solo posto**: il campo `total` (e l'ultima
-saga, se ne inizia una nuova).
+altro punto del codice dipende da un id specifico. Il numero di episodi ormai si
+aggiorna da solo (vedi sopra), quindi `total` va toccato solo se vuoi correggerlo
+a mano.
+
+Per farmi aggiungere una serie servono tre cose:
+
+1. il **nome**;
+2. il link di **un episodio qualsiasi** (meglio il primo) — da lì ricavo il
+   formato di tutti gli altri, zeri davanti compresi. Se hai anche il link SUB ITA,
+   mandalo: comparirà il secondo bottone;
+3. le **saghe**, se le vuoi divise (`Nome: 1-21`, una per riga). Se non le mandi
+   metto un unico blocco con tutti gli episodi.
+
+Facoltativi ma utili: gli intervalli dei **filler** (`54-60, 98-99`) e la
+**copertina** — o un'immagine in `img/`, o l'indirizzo di una copertina online.
+Il resto (numero di episodi, titoli, colore) lo ricavo io.
+
+Il codice regge anche formati di indirizzo diversi da quelli attuali: oltre a
+`.../pagine/001` funzionano `/ep-7`, `?ep=12`, `/episodio-005.html`. Basta che il
+numero dell'episodio compaia nel link.
 
 ## Cosa resta da fare, se vorrai
 

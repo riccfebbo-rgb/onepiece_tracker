@@ -669,6 +669,27 @@ a { color: inherit; }
   0%, 100% { box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent); }
   50%      { box-shadow: 0 0 0 5px color-mix(in oklab, var(--accent) 12%, transparent); }
 }
+/* episodio uscito dopo l'ultima volta che sei passato di qui */
+.ep.fresh {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 16%, var(--canon-bg));
+  color: color-mix(in oklab, var(--accent) 72%, var(--text));
+  font-weight: 620;
+}
+.ep.fresh::before {
+  content: ''; position: absolute; right: 3px; top: 3px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 25%, transparent);
+}
+.ep.fresh.rated::before { background: var(--star); }
+
+.card-badge.nuovo {
+  background: var(--card-accent, var(--accent)); color: oklch(0.99 0 0);
+  border-color: transparent; font-weight: 660;
+  box-shadow: 0 2px 14px color-mix(in oklab, var(--card-accent, var(--accent)) 60%, transparent);
+}
+
 .ep.flash { animation: flash .9s var(--ease) 2; }
 @keyframes flash {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 0%, transparent); }
@@ -1021,6 +1042,16 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
       <input type="checkbox" id="opt-titles" style="width:20px;height:20px;accent-color:var(--accent)">
     </label>
 
+    <div class="sheet-sec">Nuovi episodi</div>
+    <label class="account-line" style="cursor:pointer">
+      <span class="who">
+        <b>Controlla se ne sono usciti di nuovi</b>
+        <small id="nuovi-stato">Due volte al giorno, da MyAnimeList</small>
+      </span>
+      <input type="checkbox" id="opt-nuovi" style="width:20px;height:20px;accent-color:var(--accent)">
+    </label>
+    <button class="btn block ghost" id="btn-check-nuovi" style="margin-top:8px">Controlla adesso</button>
+
     <div class="sheet-sec" id="set-anime-sec">Anime corrente</div>
     <div class="sheet-row" id="set-anime-row">
       <button class="btn" id="btn-skip-filler">Salta tutti i filler</button>
@@ -1156,7 +1187,8 @@ const K = {
   backup: id => NS + 'backup:' + id,
   titles: id => NS + 'titles:' + id,
   theme:  NS + 'theme',
-  opts:   NS + 'opts'
+  opts:   NS + 'opts',
+  extra:  NS + 'extra'      // episodi scoperti dopo l'uscita, per anime
 };
 const now = () => Date.now();
 const isEp = k => /^\d+$/.test(k);
@@ -1305,12 +1337,41 @@ let currentId = null;             // anime aperto
 let filter = 'all';
 let typeMap = null;               // Uint8Array: 0 canon, 1 filler, 2 mixed
 let dlgEpKey = null, dlgEpNum = null;
-const OPTS = Object.assign({ autoTitles: true }, lsGet(K.opts, {}));
+const OPTS = Object.assign({ autoTitles: true, autoNuovi: true }, lsGet(K.opts, {}));
 const $ = s => document.querySelector(s);
 const el = id => document.getElementById(id);
 
 const A = () => ANIME_DB[currentId];
-const totalOf = a => a.total || a.sagas[a.sagas.length - 1].e;
+/* ---- episodi usciti dopo l'ultimo aggiornamento del file ------------------
+   EXTRA[id] = { total, at, seen }
+     total : ultimo episodio esistente secondo MyAnimeList
+     at    : quando l'ho controllato
+     seen  : fino a quale episodio ti ho già avvisato
+   Il numero scritto nel database qui sopra fa da pavimento: si può solo salire,
+   così un errore dell'API non può far sparire episodi dalla griglia.
+   ------------------------------------------------------------------------- */
+const EXTRA = lsGet(K.extra, {}) || {};
+
+const baseTotal = a => a.total || a.sagas[a.sagas.length - 1].e;
+function totalOf(a) {
+  const ex = EXTRA[a.id];
+  const base = baseTotal(a);
+  return (ex && ex.total > base) ? ex.total : base;
+}
+/** Le saghe, con l'ultima allungata per accogliere gli episodi nuovi. */
+function sagasOf(a) {
+  const tot = totalOf(a), list = a.sagas;
+  if (!list.length || list[list.length - 1].e >= tot) return list;
+  const out = list.slice(0, -1);
+  out.push(Object.assign({}, list[list.length - 1], { e: tot }));
+  return out;
+}
+/** Quanti episodi sono usciti di cui non ti ho ancora dato notizia. */
+function nuoviDi(id) {
+  const ex = EXTRA[id]; if (!ex) return 0;
+  const rif = Math.max(ex.seen || 0, baseTotal(ANIME_DB[id]));
+  return Math.max(0, (ex.total || 0) - rif);
+}
 
 function buildTypeMap(a) {
   const n = totalOf(a), m = new Uint8Array(n + 1);
@@ -1321,7 +1382,16 @@ function buildTypeMap(a) {
 const typeName = t => (t === 1 ? 'filler' : t === 2 ? 'mixed' : 'canon');
 const typeLabel = t => (t === 1 ? 'Filler' : t === 2 ? 'Misto' : 'Canonico');
 
+/* I link agli episodi nascono da un modello ricavato dall'indirizzo di UN episodio:
+   ".../pagine/001" diventa ".../pagine/{n}" con riempimento a 3 cifre. Gli anime
+   scritti nel file qui sopra non hanno il modello e usano il vecchio schema. */
+function fillTpl(t, n) {
+  if (!t || !t.tpl) return '';
+  return t.tpl.replace('{n}', String(n).padStart(t.pad || 1, '0'));
+}
 const epUrl = (a, n, sub) => {
+  const tpl = sub ? a.subTpl : a.itaTpl;
+  if (tpl && tpl.tpl) return fillTpl(tpl, n);
   const base = sub ? a.baseSub : a.baseIta;
   return base ? base + String(n).padStart(3, '0') : '#';
 };
@@ -1397,6 +1467,7 @@ function renderHome() {
 
   for (const a of Object.values(ANIME_DB)) {
     const p = progressOf(a.id);
+    const nuovi = nuoviDi(a.id);
     totalSeen += p.seen;
     if (q && !a.title.toLowerCase().includes(q)) continue;
     shown++;
@@ -1410,7 +1481,8 @@ function renderHome() {
         <span class="initials" aria-hidden="true">${a.title.slice(0, 1)}</span>
         <img alt="" loading="lazy" decoding="async">
         <div class="card-shade" aria-hidden="true"></div>
-        ${p.pct >= 100 ? '<span class="card-badge">Completato</span>'
+        ${nuovi ? `<span class="card-badge nuovo">${nuovi} nuov${nuovi === 1 ? 'o' : 'i'}</span>`
+          : p.pct >= 100 ? '<span class="card-badge">Completato</span>'
           : p.seen ? `<span class="card-badge">${p.pct}%</span>` : ''}
         <div class="card-over">
           <h3>${a.title}</h3>
@@ -1465,7 +1537,7 @@ function openTracker(id) {
     };
     heroImg.onerror = () => { heroImg.removeAttribute('src'); };
     heroImg.src = a.image;
-    const nSagas = a.sagas.length, nMovies = Object.keys(a.movies || {}).length;
+    const nSagas = sagasOf(a).length, nMovies = Object.keys(a.movies || {}).length;
     el('hero-kicker').textContent =
       `${nSagas} saghe · ${totalOf(a)} episodi` + (nMovies ? ` · ${nMovies} film` : '');
     el('btn-back').classList.remove('hidden');
@@ -1475,6 +1547,7 @@ function openTracker(id) {
     el('set-anime-row').classList.remove('hidden');
     renderSagas();
     refreshAll();
+    segnaNuoviComeVisti(id);
     window.scrollTo(0, 0);
   });
   history.replaceState(null, '', '#' + id);
@@ -1499,11 +1572,12 @@ function goHome() {
 el('btn-back').addEventListener('click', goHome);
 
 /* ============================ 8. GRIGLIA ================================== */
-function cellHtml(a, n, st) {
+function cellHtml(a, n, st, nuoviDa) {
   const t = typeMap[n], k = String(n);
   const cls = ['ep'];
   if (isWatched(st, k)) cls.push('done');
   if (ratingOf(st, k)) cls.push('rated');
+  if (n > nuoviDa) cls.push('fresh');
   return `<button class="${cls.join(' ')}" data-k="${k}" data-t="${typeName(t)}" tabindex="-1"
     title="Episodio ${n} — ${typeLabel(t)}" aria-label="Episodio ${n}, ${typeLabel(t)}">${n}</button>`;
 }
@@ -1519,13 +1593,15 @@ function renderSagas() {
   const a = A(), st = STATES[currentId], tot = totalOf(a);
   // fondale della saga: la copertina dell'anime, oppure l'immagine indicata
   // nel campo facoltativo 'art' della singola saga
+  const ex = EXTRA[a.id];
+  const nuoviDa = ex && ex.total ? Math.max(ex.seen || 0, baseTotal(a)) : Infinity;
   const out = [];
-  a.sagas.forEach((saga, idx) => {
+  sagasOf(a).forEach((saga, idx) => {
     const end = Math.min(saga.e, tot);
     const arte = saga.art || a.image || '';   // 'art' è opzionale, per saga
     const cells = [];
     for (let n = saga.s; n <= end; n++) {
-      cells.push(cellHtml(a, n, st));
+      cells.push(cellHtml(a, n, st, nuoviDa));
       if (a.movies && a.movies[n]) cells.push(movieHtml(a, a.movies[n], st));
     }
     out.push(`
@@ -1588,7 +1664,7 @@ function paintCell(k) {
 
 function bulkSaga(s) {
   const a = A(), st = STATES[currentId];
-  const saga = a.sagas.find(x => x.s === s); if (!saga) return;
+  const saga = sagasOf(a).find(x => x.s === s); if (!saga) return;
   const end = Math.min(saga.e, totalOf(a));
   const keys = [];
   for (let n = s; n <= end; n++) keys.push(String(n));
@@ -1714,7 +1790,7 @@ function refreshAll() {
   el('bar').style.width = pct + '%';
   el('hero-pct').textContent = `${seen} / ${tot} · ${Math.round(pct)}%`;
 
-  for (const saga of a.sagas) {
+  for (const saga of sagasOf(a)) {
     const end = Math.min(saga.e, tot);
     let c = 0;
     for (let n = saga.s; n <= end; n++) if (isWatched(st, String(n))) c++;
@@ -1776,7 +1852,7 @@ function hideDlg(d) { if (d.close) d.close(); else d.removeAttribute('open'); }
 function titleFor(n) {
   const a = A();
   if (a.titles && a.titles[n]) return a.titles[n];
-  const cache = titleCache[currentId];
+  const cache = cacheTitoli(currentId);
   return (cache && cache[n]) || '';
 }
 
@@ -1894,6 +1970,18 @@ function refreshSettings() {
   try { for (const k in localStorage) if (k.startsWith(NS)) bytes += (localStorage[k] || '').length; } catch (e) {}
   el('storage-size').textContent = bytes > 1024 ? (bytes / 1024).toFixed(0) + ' KB' : bytes + ' B';
   el('opt-titles').checked = !!OPTS.autoTitles;
+  el('opt-nuovi').checked = !!OPTS.autoNuovi;
+  el('btn-check-nuovi').disabled = !OPTS.autoNuovi;
+  let ultimo = 0, aggiunti = 0;
+  for (const id of Object.keys(ANIME_DB)) {
+    const ex = EXTRA[id]; if (!ex) continue;
+    if (ex.at > ultimo) ultimo = ex.at;
+    aggiunti += Math.max(0, (ex.total || 0) - baseTotal(ANIME_DB[id]));
+  }
+  el('nuovi-stato').textContent = ultimo
+    ? `Ultimo controllo: ${new Date(ultimo).toLocaleString('it-IT')}` +
+      (aggiunti ? ` · ${aggiunti} episodi aggiunti finora` : '')
+    : 'Due volte al giorno, da MyAnimeList';
   const has = !!currentId;
   el('set-anime-sec').classList.toggle('hidden', !has);
   el('set-anime-row').classList.toggle('hidden', !has);
@@ -1902,6 +1990,23 @@ function refreshSettings() {
 
 el('opt-titles').addEventListener('change', ev => {
   OPTS.autoTitles = ev.target.checked; lsSet(K.opts, OPTS);
+});
+el('opt-nuovi').addEventListener('change', ev => {
+  OPTS.autoNuovi = ev.target.checked; lsSet(K.opts, OPTS);
+  el('btn-check-nuovi').disabled = !ev.target.checked;
+});
+el('btn-check-nuovi').addEventListener('click', ev => {
+  const b = ev.currentTarget;
+  b.disabled = true; b.textContent = 'Controllo…';
+  let trovati = 0;
+  const prima = Object.keys(ANIME_DB).map(id => totalOf(ANIME_DB[id]));
+  controllaTuttiINuovi({ forza: true });
+  jikanChain = jikanChain.then(() => {
+    Object.keys(ANIME_DB).forEach((id, i) => { trovati += Math.max(0, totalOf(ANIME_DB[id]) - prima[i]); });
+    b.disabled = false; b.textContent = 'Controlla adesso';
+    refreshSettings();
+    if (!trovati) toast('Nessun episodio nuovo: sei aggiornato');
+  });
 });
 
 el('btn-skip-filler').addEventListener('click', () => {
@@ -1980,7 +2085,10 @@ const titleCache = {};
 let jikanChain = Promise.resolve();
 const jikanDone = new Set();
 
-for (const id of Object.keys(ANIME_DB)) titleCache[id] = lsGet(K.titles(id), {});
+/* caricata alla prima richiesta, non all'avvio */
+function cacheTitoli(id) {
+  return titleCache[id] || (titleCache[id] = lsGet(K.titles(id), {}));
+}
 
 function ensureTitles(n) {
   const a = A();
@@ -1994,12 +2102,103 @@ function ensureTitles(n) {
     .then(() => fetch(`https://api.jikan.moe/v4/anime/${a.malId}/episodes?page=${page}`))
     .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
     .then(j => {
-      const cache = titleCache[a.id];
+      const cache = cacheTitoli(a.id);
       for (const e of (j.data || [])) if (e.mal_id && e.title) cache[e.mal_id] = e.title;
       lsSet(K.titles(a.id), cache);
     })
     .catch(() => { jikanDone.delete(tag); });             // riproverà più tardi
   return jikanChain;
+}
+
+/* ============================================================================
+   13-bis. NUOVI EPISODI
+   Per una serie in corso MyAnimeList lascia "episodes" a null finché la stagione
+   non è finita, quindi il numero affidabile non è quello: è l'ultimo episodio
+   presente nell'elenco. Leggo l'ultima pagina di /episodes e prendo il massimo.
+   ========================================================================== */
+const ATTESA_CONTROLLO = 12 * 3600 * 1000;      // non più di due volte al giorno
+const attesa = ms => new Promise(r => setTimeout(r, ms));
+
+async function ultimoEpisodioUscito(a) {
+  const base = `https://api.jikan.moe/v4/anime/${a.malId}/episodes`;
+  const r1 = await fetch(base);
+  if (!r1.ok) throw new Error('Jikan ' + r1.status);
+  const j1 = await r1.json();
+  const pagine = (j1.pagination && j1.pagination.last_visible_page) || 1;
+
+  let dati = j1.data || [];
+  if (pagine > 1) {
+    await attesa(450);                           // rispetto il limite di richieste
+    const r2 = await fetch(`${base}?page=${pagine}`);
+    if (!r2.ok) throw new Error('Jikan ' + r2.status);
+    dati = (await r2.json()).data || [];
+  }
+
+  const cache = cacheTitoli(a.id);
+  let max = 0;
+  for (const e of dati.concat(j1.data || [])) {
+    const n = +e.mal_id;
+    if (n > max) max = n;
+    if (n && e.title) cache[n] = e.title;         // titoli in regalo
+  }
+  lsSet(K.titles(a.id), cache);
+  return max;
+}
+
+/** Controlla un anime. Restituisce quanti episodi nuovi ha trovato. */
+async function controllaNuovi(a, { forza = false } = {}) {
+  if (!OPTS.autoNuovi || !a.malId || !navigator.onLine) return 0;
+  const ex = EXTRA[a.id] || {};
+  if (!forza && ex.at && now() - ex.at < ATTESA_CONTROLLO) return 0;
+
+  const base = baseTotal(a);
+  const primaTotale = totalOf(a);
+  const max = await ultimoEpisodioUscito(a);
+
+  // controlli di sanità: si sale soltanto, e non di colpi assurdi
+  if (!max || max < base || max > base + 400) {
+    EXTRA[a.id] = Object.assign({}, ex, { at: now() });
+    lsSet(K.extra, EXTRA);
+    return 0;
+  }
+
+  EXTRA[a.id] = { total: max, at: now(), seen: ex.seen || base };
+  lsSet(K.extra, EXTRA);
+  return Math.max(0, max - primaTotale);
+}
+
+/** Giro completo, in coda alle altre chiamate a Jikan. */
+function controllaTuttiINuovi(opts) {
+  for (const id of Object.keys(ANIME_DB)) {
+    const a = ANIME_DB[id];
+    jikanChain = jikanChain
+      .then(() => attesa(500))
+      .then(() => controllaNuovi(a, opts))
+      .then(nuovi => {
+        if (!nuovi) return;
+        const totale = nuoviDi(id);
+        toast(`${nuovi === 1 ? 'È uscito 1 nuovo episodio' : `Sono usciti ${nuovi} nuovi episodi`} di ${a.title}`, {
+          action: 'Vedi', ms: 9000,
+          onAction: () => { if (currentId !== id) openTracker(id); jumpTo(totalOf(a)); }
+        });
+        if (currentId === id) { renderSagas(); refreshAll(); } else renderHome();
+      })
+      .catch(e => console.warn('[nuovi]', a.id, e));
+  }
+}
+
+/** Quando apri un anime, gli episodi nuovi smettono di essere "nuovi". */
+function segnaNuoviComeVisti(id) {
+  const ex = EXTRA[id];
+  if (!ex || !ex.total) return;
+  const rif = Math.max(ex.seen || 0, baseTotal(ANIME_DB[id]));
+  if (ex.total <= rif) return;
+  setTimeout(() => {
+    if (currentId !== id) return;
+    ex.seen = ex.total;
+    lsSet(K.extra, EXTRA);
+    renderHome();
+  }, 2500);
 }
 
 /* ============================ 14. CLOUD (opzionale) ======================= */
@@ -2167,6 +2366,7 @@ addEventListener('scroll', () => {
 }, { passive: true });
 
 /* ============================ 16. AVVIO =================================== */
+/* ============================ AVVIO ======================================== */
 // pulsante "salta al prossimo canonico" (creato prima del primo render)
 const skipBtn = document.createElement('button');
 skipBtn.className = 'btn sm hidden';
@@ -2187,6 +2387,9 @@ if (migratedCount) {
 
 if (typeof requestIdleCallback === 'function') requestIdleCallback(() => Cloud.init());
 else setTimeout(() => Cloud.init(), 800);
+
+// controllo nuovi episodi: in fondo alla coda, senza rallentare l'avvio
+setTimeout(() => controllaTuttiINuovi(), 2500);
 
 /* Piccola API di servizio dalla console del browser — utile se qualcosa va storto:
      AnimeTracker.backups('onepiece')        -> elenco delle copie di sicurezza
