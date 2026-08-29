@@ -82,12 +82,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg:            oklch(0.165 0.006 265);
-  --bg-sunken:     oklch(0.135 0.006 265);
-  --elev:          oklch(0.215 0.008 265);
-  --surface:       oklch(0.205 0.008 265);
-  --surface-2:     oklch(0.255 0.010 265);
-  --border:        oklch(0.285 0.010 265);
+  --bg:            oklch(0.145 0.008 265);
+  --bg-sunken:     oklch(0.115 0.008 265);
+  --elev:          oklch(0.198 0.010 265);
+  --surface:       oklch(0.185 0.010 265);
+  --surface-2:     oklch(0.242 0.012 265);
+  --border:        oklch(0.285 0.012 265);
   --border-strong: oklch(0.38 0.014 265);
   --text:          oklch(0.94 0.005 265);
   --text-muted:    oklch(0.72 0.010 265);
@@ -148,13 +148,21 @@ body {
   font-synthesis-weight: none;
   overflow-wrap: break-word;
 }
-/* trama di sfondo appena percepibile */
+/* alone dell'accento dietro alla pagina */
 body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(120% 60% at 50% -10%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 70%);
+    radial-gradient(130% 70% at 50% -12%, color-mix(in oklab, var(--accent) 14%, transparent), transparent 68%);
   transition: background .5s var(--ease);
 }
+/* grana da pellicola: quasi invisibile, ma toglie il "piatto" alle superfici */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  opacity: .028; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+:root[data-theme="dark"] body::after { opacity: .05; }
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
@@ -321,59 +329,80 @@ a { color: inherit; }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: clamp(12px, 2vw, 20px);
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: clamp(14px, 2.2vw, 24px);
 }
 .card {
-  position: relative; display: flex; flex-direction: column;
+  position: relative; display: block;
   text-align: left; padding: 0; overflow: hidden;
-  background: var(--elev); border: 1px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
-  transition: transform .28s var(--spring), box-shadow .28s var(--ease),
+  box-shadow: var(--shadow-md);
+  transition: transform .32s var(--spring), box-shadow .32s var(--ease),
               border-color .2s var(--ease);
 }
 .card:hover, .card:focus-visible {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--accent-line);
+  transform: translateY(-6px) scale(1.012);
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in oklab, var(--card-accent, var(--accent)) 55%, var(--border));
 }
 .card-art {
   position: relative; aspect-ratio: 2 / 3; width: 100%;
   background: linear-gradient(150deg,
-    color-mix(in oklab, var(--card-accent, var(--accent)) 30%, var(--surface-2)),
-    var(--surface-2) 65%);
+    color-mix(in oklab, var(--card-accent, var(--accent)) 34%, var(--surface-2)),
+    var(--surface-2) 68%);
   display: grid; place-items: center; overflow: hidden;
 }
 .card-art img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0; transition: opacity .4s var(--ease);
+  object-fit: cover; opacity: 0;
+  transition: opacity .5s var(--ease), transform .6s var(--ease);
 }
 .card-art img.ready { opacity: 1; }
+.card:hover .card-art img.ready { transform: scale(1.05); }
 .card-art .initials {
-  font-family: var(--serif); font-size: 54px; font-style: italic;
+  font-family: var(--serif); font-size: 68px; font-style: italic;
   color: color-mix(in oklab, var(--card-accent, var(--accent)) 65%, var(--text));
-  opacity: .55;
+  opacity: .5;
+}
+/* sfumatura scura in basso: il titolo sta sopra la locandina */
+.card-shade {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to top,
+    oklch(0.12 0.02 265 / .92) 0%,
+    oklch(0.12 0.02 265 / .72) 26%,
+    oklch(0.12 0.02 265 / .18) 52%,
+    transparent 72%);
+}
+.card-over {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 14px 14px 15px; color: oklch(0.98 0 0);
+}
+.card-over h3 {
+  font-size: 19px; font-weight: 640; letter-spacing: -.026em; line-height: 1.15;
+  text-shadow: 0 1px 12px oklch(0 0 0 / .5);
+}
+.card-meta {
+  font-size: 12px; margin-top: 3px; color: oklch(1 0 0 / .78);
+  font-variant-numeric: tabular-nums;
 }
 .card-badge {
-  position: absolute; left: 10px; top: 10px; z-index: 2;
-  padding: 4px 9px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; letter-spacing: .01em;
-  background: color-mix(in oklab, var(--elev) 82%, transparent);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  position: absolute; right: 10px; top: 10px; z-index: 3;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 620; letter-spacing: .01em;
+  background: oklch(0.12 0.02 265 / .55);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid oklch(1 0 0 / .22);
+  color: oklch(0.99 0 0);
 }
-.card-body { padding: 13px 14px 15px; display: flex; flex-direction: column; gap: 4px; }
-.card-body h3 { font-size: 16px; font-weight: 600; letter-spacing: -.018em; }
-.card-meta { font-size: 12.5px; color: var(--text-muted); }
 .card-bar {
-  height: 5px; border-radius: 999px; background: var(--surface-2);
-  overflow: hidden; margin-top: 9px;
+  height: 4px; border-radius: 999px; background: oklch(1 0 0 / .25);
+  overflow: hidden; margin-top: 10px;
 }
 .card-bar i {
   display: block; height: 100%; border-radius: 999px;
   background: var(--card-accent, var(--accent));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--card-accent, var(--accent)) 70%, transparent);
   transition: width .6s var(--ease);
 }
 
@@ -383,19 +412,88 @@ a { color: inherit; }
 }
 
 /* ============================================================
-   TRACKER — riga "continua"
+   TRACKER — testata con copertina
    ============================================================ */
+.hero-anime {
+  position: relative; isolation: isolate;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+/* la copertina, sfocata, fa da sfondo */
+.hero-bg {
+  position: absolute; inset: -60px; z-index: 0;
+  background-size: cover; background-position: center 22%;
+  filter: blur(34px) saturate(1.5);
+  opacity: .78; transform: scale(1.1);
+}
+:root[data-theme="dark"] .hero-bg { opacity: .58; }
+/* velo che garantisce la leggibilita' del testo su qualsiasi immagine */
+.hero-scrim {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(100deg,
+      var(--bg) 0%,
+      color-mix(in oklab, var(--bg) 82%, transparent) 42%,
+      color-mix(in oklab, var(--bg) 34%, transparent) 100%),
+    linear-gradient(to top, var(--bg) 2%, transparent 72%),
+    radial-gradient(120% 130% at 12% 50%, var(--bg) 8%, transparent 62%);
+}
+.hero-inner {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: clamp(14px, 2.6vw, 22px);
+  padding: clamp(18px, 3vw, 30px);
+}
+.hero-poster {
+  position: relative; flex-shrink: 0;
+  width: clamp(88px, 13vw, 132px); aspect-ratio: 2/3;
+  border-radius: var(--r-md); overflow: hidden;
+  background: linear-gradient(150deg,
+    color-mix(in oklab, var(--accent) 32%, var(--surface-2)), var(--surface-2) 70%);
+  display: grid; place-items: center;
+  box-shadow: 0 2px 6px oklch(0 0 0/.14), 0 14px 34px oklch(0 0 0/.18);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+.hero-poster img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity .45s var(--ease);
+}
+.hero-poster img.ready { opacity: 1; }
+.hero-initial {
+  font-family: var(--serif); font-style: italic; font-size: 40px;
+  color: color-mix(in oklab, var(--accent) 60%, var(--text)); opacity: .5;
+}
+.hero-info { flex: 1; min-width: 0; }
+.hero-kicker {
+  font-size: 10.5px; color: var(--text-muted); font-weight: 640;
+  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px;
+}
+.hero-name {
+  font-size: clamp(26px, 4.4vw, 42px); font-weight: 660;
+  letter-spacing: -.04em; line-height: 1.04; margin-bottom: 12px;
+}
+.hero-progress { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.hero-progress .bar-wrap { flex: 1; margin: 0; }
+.hero-pct { font-size: 12.5px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
+
+.bar-poster {
+  width: 26px; height: 39px; border-radius: 5px; object-fit: cover;
+  flex-shrink: 0; box-shadow: var(--shadow-sm);
+  animation: popIn .3s var(--spring);
+}
+@keyframes popIn { from { transform: scale(.6); opacity: 0; } }
+
 .resume {
-  display: grid; gap: 14px;
+  display: grid; gap: 12px;
   grid-template-columns: 1fr auto;
   align-items: center;
-  padding: 16px 18px;
-  border-radius: var(--r-lg);
-  background:
-    linear-gradient(135deg, color-mix(in oklab, var(--accent) 10%, var(--elev)), var(--elev) 62%);
-  border: 1px solid var(--accent-line);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 14px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: color-mix(in oklab, var(--elev) 76%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
 }
 .resume-label {
   font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
@@ -405,10 +503,26 @@ a { color: inherit; }
 .resume-ep { font-size: 21px; font-weight: 620; letter-spacing: -.025em; }
 .resume-title { font-size: 13.5px; color: var(--text-muted); margin-top: 3px; }
 .resume-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-@media (max-width: 640px) {
+@media (max-width: 700px) {
   .resume { grid-template-columns: 1fr; }
   .resume-actions { justify-content: stretch; }
   .resume-actions .btn { flex: 1; }
+}
+@media (max-width: 560px) {
+  .hero-inner { align-items: flex-start; gap: 13px; padding: 14px; }
+  .hero-poster { width: 76px; }
+  .hero-name { margin-bottom: 8px; }
+  .hero-progress { margin-bottom: 12px; gap: 8px; }
+  .hero-kicker { font-size: 9.5px; letter-spacing: .09em; margin-bottom: 4px; }
+  .saga-head { padding: 10px 12px; gap: 9px; }
+  .saga-name { font-size: 15px; }
+  .hero-pct { font-size: 11.5px; }
+  .resume { padding: 11px 12px; gap: 10px; }
+  .resume-label { font-size: 10px; }
+  .resume-ep { font-size: 17px; }
+  .resume-actions { display: flex; gap: 7px; }
+  .resume-actions .btn { flex: 1; min-width: 0; padding: 0 10px; }
+  #btn-goto { display: none; }   /* su telefono si tocca direttamente la cella */
 }
 
 .tag {
@@ -444,8 +558,9 @@ a { color: inherit; }
 .stat-v small { font-size: 12px; font-weight: 500; color: var(--text-hint); letter-spacing: 0; }
 
 .bar-wrap {
-  position: relative; height: 8px; border-radius: 999px;
-  background: var(--surface-2); overflow: hidden; margin-bottom: 20px;
+  position: relative; height: 7px; border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 12%, transparent);
+  overflow: hidden;
 }
 .bar-fill {
   height: 100%; border-radius: 999px;
@@ -469,26 +584,51 @@ a { color: inherit; }
    SAGHE + GRIGLIA EPISODI
    ============================================================ */
 .saga {
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   content-visibility: auto;
   contain-intrinsic-size: auto 260px;
 }
 .saga-head {
-  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
-  padding: 7px 0 9px;
-  position: sticky; top: 112px; z-index: 30;
-  background: color-mix(in oklab, var(--bg) 96%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  position: sticky; top: 108px; z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 15px; margin-bottom: 12px;
+  border-radius: var(--r-md);
+  overflow: hidden; isolation: isolate;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
 }
-.saga-icon { font-size: 15px; line-height: 1; }
-.saga-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.015em; }
-.saga-range { font-size: 12px; color: var(--text-hint); }
+.saga-band {
+  position: absolute; inset: -40px; z-index: 0;
+  background-size: cover; background-position: center 38%;
+  filter: blur(20px) saturate(1.6); opacity: .7; transform: scale(1.12);
+}
+:root[data-theme="dark"] .saga-band { opacity: .5; }
+.saga-veil {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(90deg,
+    var(--bg) 0%,
+    color-mix(in oklab, var(--bg) 80%, transparent) 46%,
+    color-mix(in oklab, var(--bg) 42%, transparent) 100%);
+}
+.saga-head > *:not(.saga-band):not(.saga-veil) { position: relative; z-index: 2; }
+.saga-titles { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.saga-name {
+  font-size: 16.5px; font-weight: 650; letter-spacing: -.024em; line-height: 1.2;
+}
+.saga-range { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
 .saga-count {
   font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums;
-  padding: 2px 8px; border-radius: 999px; background: var(--surface);
+  padding: 3px 10px; border-radius: 999px;
+  background: color-mix(in oklab, var(--elev) 72%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 .saga-count.done { color: var(--ok); background: color-mix(in oklab, var(--ok) 13%, var(--bg)); }
-.saga-head .btn { margin-left: auto; }
+.saga-head .btn {
+  background: color-mix(in oklab, var(--elev) 76%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
 
 .grid {
   display: grid;
@@ -667,7 +807,10 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
   .stat { padding: 9px 11px; }
   .stat-k { font-size: 9.5px; letter-spacing: .06em; }
   .stat-v { font-size: 18px; }
-  .saga-head .btn { margin-left: auto; }
+  .saga-head .btn {
+  background: color-mix(in oklab, var(--elev) 76%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
   .resume { padding: 14px; }
 }
 
@@ -683,6 +826,8 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
     <button class="icon-btn hidden" id="btn-back" aria-label="Torna alla libreria">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
     </button>
+
+    <img class="bar-poster hidden" id="bar-poster" alt="" decoding="async">
 
     <div class="appbar-title">
       <h1 id="bar-title">Anime Tracker</h1>
@@ -719,19 +864,41 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
   <!-- ================= TRACKER ================= -->
   <main id="view-tracker" class="hidden">
 
-    <section class="resume" id="resume">
-      <div>
-        <div class="resume-label">Prossimo da vedere</div>
-        <div class="resume-main">
-          <span class="resume-ep num" id="resume-ep">—</span>
-          <span class="tag canon" id="resume-tag">Canonico</span>
+    <section class="hero-anime" id="hero">
+      <div class="hero-bg" id="hero-bg" aria-hidden="true"></div>
+      <div class="hero-scrim" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <figure class="hero-poster">
+          <span class="hero-initial" id="hero-initial" aria-hidden="true"></span>
+          <img id="hero-img" alt="" decoding="async">
+        </figure>
+
+        <div class="hero-info">
+          <div class="hero-kicker" id="hero-kicker"></div>
+          <h2 class="hero-name" id="hero-name">—</h2>
+
+          <div class="hero-progress">
+            <div class="bar-wrap"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+            <div class="hero-pct num" id="hero-pct">0%</div>
+          </div>
+
+          <div class="resume" id="resume">
+            <div class="resume-text">
+              <div class="resume-label">Prossimo da vedere</div>
+              <div class="resume-main">
+                <span class="resume-ep num" id="resume-ep">—</span>
+                <span class="tag canon" id="resume-tag">Canonico</span>
+              </div>
+              <div class="resume-title" id="resume-title"></div>
+            </div>
+            <div class="resume-actions" id="resume-actions">
+              <button class="btn sm" id="btn-goto">Vai all'episodio</button>
+              <a class="btn sm" id="lnk-sub" href="#" target="_blank" rel="noopener noreferrer">SUB</a>
+              <a class="btn sm primary" id="lnk-ita" href="#" target="_blank" rel="noopener noreferrer">Guarda ITA</a>
+            </div>
+          </div>
         </div>
-        <div class="resume-title" id="resume-title"></div>
-      </div>
-      <div class="resume-actions" id="resume-actions">
-        <button class="btn sm" id="btn-goto">Vai all'episodio</button>
-        <a class="btn sm" id="lnk-sub" href="#" target="_blank" rel="noopener noreferrer">SUB</a>
-        <a class="btn sm primary" id="lnk-ita" href="#" target="_blank" rel="noopener noreferrer">Guarda ITA</a>
       </div>
     </section>
 
@@ -743,8 +910,6 @@ dialog[open] .sheet { animation: pop .28s var(--spring); }
       <div class="stat"><div class="stat-k">Film</div><div class="stat-v num" id="st-movies">0</div></div>
       <div class="stat"><div class="stat-k">Tempo</div><div class="stat-v num" id="st-time">0h</div></div>
     </section>
-
-    <div class="bar-wrap"><div class="bar-fill" id="bar" style="width:0%"></div></div>
 
     <div class="toolbar">
       <div class="segmented" id="filters" role="group" aria-label="Filtra episodi">
@@ -898,18 +1063,18 @@ const ANIME_DB = {
     filler: [[54,60],[98,99],[102,102],[131,143],[196,206],[220,225],[279,283],[291,292],[303,303],[317,319],[326,336],[382,384],[406,407],[426,429],[457,458],[492,492],[542,542],[575,578],[590,590],[626,627],[747,750],[780,782],[895,896],[907,907],[1029,1030]],
     mixed: [[45,47],[61,61],[68,69],[101,101],[213,216]],
     sagas: [
-      {name:'Mare Orientale',icon:'🌊',s:1,e:61},
-      {name:'Arabasta',icon:'🏜️',s:62,e:135},
-      {name:'Skypiea',icon:'☁️',s:136,e:206},
-      {name:'Water Seven & Enies Lobby',icon:'🚂',s:207,e:325},
-      {name:'Thriller Bark',icon:'🦇',s:326,e:384},
-      {name:'Sabaody & Marineford',icon:'⚓',s:385,e:516},
-      {name:'Isola degli Uomini-Pesce',icon:'🐟',s:517,e:574},
-      {name:'Punk Hazard',icon:'🧪',s:575,e:629},
-      {name:'Dressrosa',icon:'🌹',s:630,e:699},
-      {name:'Zou & Whole Cake Island',icon:'🍰',s:700,e:877},
-      {name:'Wano',icon:'🗡️',s:878,e:1085},
-      {name:'Egghead',icon:'🤖',s:1086,e:1155}
+      {name:'Mare Orientale',s:1,e:61},
+      {name:'Arabasta',s:62,e:135},
+      {name:'Skypiea',s:136,e:206},
+      {name:'Water Seven & Enies Lobby',s:207,e:325},
+      {name:'Thriller Bark',s:326,e:384},
+      {name:'Sabaody & Marineford',s:385,e:516},
+      {name:'Isola degli Uomini-Pesce',s:517,e:574},
+      {name:'Punk Hazard',s:575,e:629},
+      {name:'Dressrosa',s:630,e:699},
+      {name:'Zou & Whole Cake Island',s:700,e:877},
+      {name:'Wano',s:878,e:1085},
+      {name:'Egghead',s:1086,e:1155}
     ],
     movies: {
       130:  {id:'m08', title:'Film 8: Alabasta',            num:'08'},
@@ -937,13 +1102,13 @@ const ANIME_DB = {
     filler: [[13,13],[26,26]],
     mixed: [],
     sagas: [
-      {name:'Esame Hunter',icon:'🎯',s:1,e:21},
-      {name:'Famiglia Zoldyck',icon:'🚪',s:22,e:26},
-      {name:'Arena Celeste',icon:'🏟️',s:27,e:36},
-      {name:'Yorknew City',icon:'🕷️',s:37,e:58},
-      {name:'Greed Island',icon:'🎮',s:59,e:75},
-      {name:'Formichimere',icon:'🐜',s:76,e:136},
-      {name:'Elezione del Presidente',icon:'🗳️',s:137,e:148}
+      {name:'Esame Hunter',s:1,e:21},
+      {name:'Famiglia Zoldyck',s:22,e:26},
+      {name:'Arena Celeste',s:27,e:36},
+      {name:'Yorknew City',s:37,e:58},
+      {name:'Greed Island',s:59,e:75},
+      {name:'Formichimere',s:76,e:136},
+      {name:'Elezione del Presidente',s:137,e:148}
     ],
     movies: {}, titles: {}
   },
@@ -958,12 +1123,12 @@ const ANIME_DB = {
     filler: [[16,17],[40,41],[48,50],[67,69],[96,97],[104,105],[112,119],[138,140],[152,154],[156,156],[256,258],[261,273]],
     mixed: [[18,18],[93,95],[106,111],[127,127],[192,192]],
     sagas: [
-      {name:'Stagione 1',icon:'📺',s:1,e:52},
-      {name:'Stagione 2',icon:'📺',s:53,e:104},
-      {name:'Stagione 3',icon:'📺',s:105,e:156},
-      {name:'Stagione 4',icon:'📺',s:157,e:208},
-      {name:'Stagione 5',icon:'📺',s:209,e:260},
-      {name:'Stagione 6',icon:'📺',s:261,e:293}
+      {name:'Stagione 1',s:1,e:52},
+      {name:'Stagione 2',s:53,e:104},
+      {name:'Stagione 3',s:105,e:156},
+      {name:'Stagione 4',s:157,e:208},
+      {name:'Stagione 5',s:209,e:260},
+      {name:'Stagione 6',s:261,e:293}
     ],
     movies: { 50: {id:'m01', title:'Boruto: Naruto the Movie', num:'01'} },
     titles: { 1:'Boruto Uzumaki!', 2:"Il figlio dell'Hokage!", 3:'Metal Lee si scatena!' }
@@ -1242,15 +1407,16 @@ function renderHome() {
     card.setAttribute('aria-label', `${a.title}, ${p.seen} di ${p.tot} episodi visti`);
     card.innerHTML = `
       <div class="card-art">
-        <span class="initials">${a.title.slice(0, 1)}</span>
+        <span class="initials" aria-hidden="true">${a.title.slice(0, 1)}</span>
         <img alt="" loading="lazy" decoding="async">
+        <div class="card-shade" aria-hidden="true"></div>
         ${p.pct >= 100 ? '<span class="card-badge">Completato</span>'
           : p.seen ? `<span class="card-badge">${p.pct}%</span>` : ''}
-      </div>
-      <div class="card-body">
-        <h3>${a.title}</h3>
-        <div class="card-meta num">${p.seen} / ${p.tot} episodi${p.next ? ` · prossimo ${p.next}` : ''}</div>
-        <div class="card-bar"><i style="width:${p.pct}%"></i></div>
+        <div class="card-over">
+          <h3>${a.title}</h3>
+          <div class="card-meta">${p.seen} / ${p.tot} episodi${p.next ? ` · prossimo ${p.next}` : ''}</div>
+          <div class="card-bar"><i style="width:${p.pct}%"></i></div>
+        </div>
       </div>`;
     const img = card.querySelector('img');
     img.addEventListener('load', () => img.classList.add('ready'));
@@ -1284,6 +1450,24 @@ function openTracker(id) {
     document.documentElement.style.setProperty('--accent', a.accent);
     el('bar-title').textContent = a.title;
     el('bar-sub').textContent = a.sub;
+
+    // testata: copertina come sfondo sfocato + locandina + titolo
+    el('hero-name').textContent = a.title;
+    el('hero-initial').textContent = a.title.slice(0, 1);
+    const heroImg = el('hero-img'), barImg = el('bar-poster');
+    heroImg.classList.remove('ready');
+    barImg.classList.add('hidden');
+    el('hero-bg').style.backgroundImage = '';
+    heroImg.onload = () => {
+      heroImg.classList.add('ready');
+      el('hero-bg').style.backgroundImage = `url("${a.image}")`;
+      barImg.src = a.image;                       // mini-locandina nella barra in alto
+    };
+    heroImg.onerror = () => { heroImg.removeAttribute('src'); };
+    heroImg.src = a.image;
+    const nSagas = a.sagas.length, nMovies = Object.keys(a.movies || {}).length;
+    el('hero-kicker').textContent =
+      `${nSagas} saghe · ${totalOf(a)} episodi` + (nMovies ? ` · ${nMovies} film` : '');
     el('btn-back').classList.remove('hidden');
     el('view-home').classList.add('hidden');
     el('view-tracker').classList.remove('hidden');
@@ -1303,6 +1487,7 @@ function goHome() {
     el('bar-title').textContent = 'Anime Tracker';
     el('bar-sub').textContent = 'la tua libreria';
     el('btn-back').classList.add('hidden');
+    el('bar-poster').classList.add('hidden');
     el('view-tracker').classList.add('hidden');
     el('view-home').classList.remove('hidden');
     el('set-anime-sec').classList.add('hidden');
@@ -1332,9 +1517,12 @@ function movieHtml(a, m, st) {
 
 function renderSagas() {
   const a = A(), st = STATES[currentId], tot = totalOf(a);
+  // fondale della saga: la copertina dell'anime, oppure l'immagine indicata
+  // nel campo facoltativo 'art' della singola saga
   const out = [];
-  for (const saga of a.sagas) {
+  a.sagas.forEach((saga, idx) => {
     const end = Math.min(saga.e, tot);
+    const arte = saga.art || a.image || '';   // 'art' è opzionale, per saga
     const cells = [];
     for (let n = saga.s; n <= end; n++) {
       cells.push(cellHtml(a, n, st));
@@ -1342,16 +1530,19 @@ function renderSagas() {
     }
     out.push(`
       <section class="saga" data-s="${saga.s}" data-e="${end}">
-        <div class="saga-head">
-          <span class="saga-icon">${saga.icon}</span>
-          <span class="saga-name">${saga.name}</span>
-          <span class="saga-range num">Ep. ${saga.s}–${end}</span>
+        <div class="saga-head" data-i="${idx}">
+          <div class="saga-band"${arte ? ` style="background-image:url('${arte}')"` : ''} aria-hidden="true"></div>
+          <div class="saga-veil" aria-hidden="true"></div>
+          <div class="saga-titles">
+            <span class="saga-name">${saga.name}</span>
+            <span class="saga-range num">Episodi ${saga.s}–${end}</span>
+          </div>
           <span class="saga-count num" id="sc-${saga.s}"></span>
           <button class="btn sm" data-bulk="${saga.s}">Segna tutti</button>
         </div>
         <div class="grid">${cells.join('')}</div>
       </section>`);
-  }
+  });
   el('sagas').innerHTML = out.join('');
   // una sola cella per griglia entra nel giro del Tab: le altre con le frecce
   el('sagas').querySelectorAll('.grid').forEach(g => { if (g.firstElementChild) g.firstElementChild.tabIndex = 0; });
@@ -1519,7 +1710,9 @@ function refreshAll() {
   el('st-movies').textContent = movies;
   const d = Math.floor(minutes / 1440), h = Math.floor((minutes % 1440) / 60);
   el('st-time').innerHTML = (d ? `${d}<small>g</small> ` : '') + `${h}<small>h</small>`;
-  el('bar').style.width = (tot ? (seen / tot) * 100 : 0) + '%';
+  const pct = tot ? (seen / tot) * 100 : 0;
+  el('bar').style.width = pct + '%';
+  el('hero-pct').textContent = `${seen} / ${tot} · ${Math.round(pct)}%`;
 
   for (const saga of a.sagas) {
     const end = Math.min(saga.e, tot);
@@ -1966,7 +2159,11 @@ addEventListener('keydown', ev => {
   else if (ev.key.toLowerCase() === 'b' && currentId && !dlgEp.open && !dlgSet.open) goHome();
 });
 addEventListener('scroll', () => {
-  el('appbar').classList.toggle('scrolled', scrollY > 8);
+  const down = scrollY > 8;
+  el('appbar').classList.toggle('scrolled', down);
+  // la mini-locandina compare nella barra quando la testata esce di scena
+  const bp = el('bar-poster');
+  bp.classList.toggle('hidden', !(currentId && bp.src && scrollY > 150));
 }, { passive: true });
 
 /* ============================ 16. AVVIO =================================== */

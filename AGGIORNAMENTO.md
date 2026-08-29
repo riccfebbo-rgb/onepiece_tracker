@@ -114,6 +114,20 @@ lettura, quindi la prima sincronizzazione lo recupera invece di cancellarlo.
   aggiorni `index.html` la nuova versione arriva subito, la cache serve solo offline.
 - Scorciatoie: `/` per cercare, `B` per tornare alla libreria, `Esc` per chiudere.
 
+## Passata grafica (v3.1)
+
+- **Libreria**: copertine grandi, titolo e progressi *sopra* la locandina con
+  sfumatura, badge della percentuale, ingrandimento leggero al passaggio del mouse.
+- **Testata dell'anime**: locandina in evidenza e la stessa immagine, sfocata, come
+  fondale; titolo grande, barra dei progressi e "prossimo da vedere" in un blocco solo.
+  Scorrendo resta una mini-locandina nella barra in alto.
+- **Saghe senza emoji**: al posto dell'icona ogni saga ha una fascia con l'immagine
+  di copertina sfocata e una barretta nel colore dell'anime. Se vuoi un'immagine
+  diversa per una saga, aggiungi il campo facoltativo `art` alla saga:
+  `{name:'Wano', s:878, e:1085, art:'img/saghe/wano.jpg'}`.
+- **Più atmosfera**: tema scuro più profondo, alone del colore dell'anime dietro
+  alla pagina, e una grana da pellicola quasi invisibile che toglie il "piatto".
+
 ## Manutenzione
 
 Aggiungere un anime = aggiungere una voce a `ANIME_DB` in cima allo script; nessun
