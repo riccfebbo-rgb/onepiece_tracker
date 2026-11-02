@@ -5,10 +5,13 @@
    - resto -> stale-while-revalidate: veloce, ma si aggiorna in background.
    Le chiamate a Firebase e a Jikan NON passano mai dalla cache. */
 
-const VERSION = 'at-v3.0.0';
+const VERSION = 'at-v3.0.1';
 const SHELL = `shell-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 const PRECACHE = ['./', './index.html', './manifest.json', './icon.png'];
+// i file precaricati si aggiornano dentro SHELL: caches.match() guarda lì per prima,
+// quindi una copia nuova salvata in ASSETS non verrebbe mai servita
+const PRECACHE_URLS = new Set(PRECACHE.map(u => new URL(u, self.location).href));
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -57,7 +60,8 @@ self.addEventListener('fetch', event => {
       const network = fetch(req).then(res => {
         if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
           const copy = res.clone();
-          caches.open(ASSETS).then(c => c.put(req, copy)).catch(() => {});
+          caches.open(PRECACHE_URLS.has(url.href) ? SHELL : ASSETS)
+            .then(c => c.put(req, copy)).catch(() => {});
         }
         return res;
       }).catch(() => cached);
